@@ -39,6 +39,7 @@ header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
 }
 .header-title h1 {
   font-size: 19px;
@@ -53,6 +54,8 @@ header {
   text-align: right;
   font-size: 12px;
   opacity: 0.92;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .header-stats strong { font-size: 16px; display: block; }
 .progress-bar {
@@ -79,6 +82,7 @@ header {
 }
 @media (max-width: 1080px) {
   .layout { grid-template-columns: 1fr; }
+  .playlist { position: static; max-height: none; }
 }
 .player-section { min-width: 0; }
 .player-wrap {
@@ -160,6 +164,7 @@ header {
   transition: all 0.2s;
 }
 .btn:hover { border-color: var(--navy); color: var(--navy); }
+.btn:disabled { opacity: 0.45; cursor: default; pointer-events: none; }
 .btn-primary {
   background: var(--green);
   color: white;
@@ -304,7 +309,13 @@ header {
   overflow: hidden;
   box-shadow: 0 20px 60px rgba(0,0,0,0.4);
   animation: slideUp 0.3s ease;
+  max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - 48px);
+  display: flex;
+  flex-direction: column;
 }
+.intro-modal-header, .intro-modal-footer { flex-shrink: 0; }
+.intro-modal-body { overflow-y: auto; -webkit-overflow-scrolling: touch; }
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 .intro-modal-header {
   background: var(--navy);
@@ -432,7 +443,7 @@ header {
 
     <div class="completion-banner" id="completionBanner">
       <h2>Ukończyłeś Poziom 1</h2>
-      <p>Pokryłeś wszystkie odcinki podstawowe. Poziom 2 zawiera materiały rozszerzające — wybierz dowolny temat z listy, aby kontynuować.</p>
+      <p>Obejrzałeś wszystkie odcinki podstawowe. Poziom 2 zawiera materiały rozszerzające — wybierz dowolny temat z listy, aby kontynuować.</p>
       <span class="reset-link" id="resetLink">Zacznij od nowa</span>
     </div>
   </div>
@@ -496,14 +507,14 @@ const playlist = [
     title: 'Trzy poziomy funkcji Claude',
     author: 'The AI Productivity Coach',
     lang: 'en', duration: 640,
-    start: 130, end: 770,
+    start: 134, end: 774,
     section: 'level1',
     intro: {
       about: 'Anglojęzyczne wideo systematyzujące wszystkie funkcje Claude w trzy poziomy zaawansowania: podstawowe, rozszerzone oraz agentowe.',
       takeaway: 'Otrzymasz uporządkowaną mapę funkcji platformy: czat z wyszukiwaniem web, Artifacts, Memory, Projects i Custom Style na poziomie pierwszym; Connectors, Skills, Extended Thinking i Research mode na poziomie drugim; Cowork, Claude Code oraz Computer Use na poziomie trzecim. Zrozumiesz, jakie produkty istnieją w ekosystemie i kiedy każdego z nich używać.',
-      part: 'Uzupełnienie podstaw — szczegółowa mapa funkcji ekosystemu Claude. Adresuje lukę kompetencyjną dotyczącą rozróżnienia produktów Claude (chat, Cowork, Code).'
+      part: 'Uzupełnienie podstaw — szczegółowa mapa funkcji ekosystemu Claude wraz z rozróżnieniem produktów: czat, Cowork oraz Claude Code.'
     },
-    desc: 'Anglojęzyczne wideo systematyzujące funkcje Claude w trzy poziomy zaawansowania. Poziom pierwszy obejmuje czat, wyszukiwanie web, Artifacts, Memory, Projects i Custom Style. Poziom drugi prezentuje Connectors, Skills, Extended Thinking i tryb Research. Poziom trzeci przedstawia narzędzia agentowe: Cowork, Claude Code oraz Computer Use. Wycinka pomija intro oraz omówienie planów cenowych.',
+    desc: 'Anglojęzyczne wideo systematyzujące funkcje Claude w trzy poziomy zaawansowania. Poziom pierwszy obejmuje czat, wyszukiwanie web, Artifacts, Memory, Projects i Custom Style. Poziom drugi prezentuje Connectors, Skills, Extended Thinking i tryb Research. Poziom trzeci przedstawia narzędzia agentowe: Cowork, Claude Code oraz Computer Use. Wycinek pomija wstęp oraz omówienie planów cenowych.',
     zadanie: 'Stwórz pierwszy własny Project w Claude. Wgraj dwa dokumenty (na przykład notatka i raport rynkowy) i zadaj pytanie wymagające skorzystania z obu źródeł.'
   },
   {
@@ -541,22 +552,22 @@ const playlist = [
     title: 'Cowork w praktyce — porządkowanie plików i przetwarzanie paragonów',
     author: "Teacher's Tech",
     lang: 'en', duration: 391,
-    start: 301, end: 692,
+    start: 303, end: 694,
     section: 'level1',
     intro: {
       about: 'Anglojęzyczna demonstracja dwóch zastosowań Claude Cowork na rzeczywistych zbiorach plików.',
       takeaway: 'Pierwsze demo pokazuje pełen proces porządkowania chaotycznego folderu pobranych plików — sortowanie według typów, identyfikację duplikatów i propozycje struktury. Drugie demo prezentuje przekształcenie zdjęć paragonów w arkusz Excela z formułami SUMIF, COUNTIF oraz automatycznie wygenerowanym wykresem podsumowującym wydatki według kategorii.',
       part: 'Praktyczne zastosowania Cowork w pracy z plikami i danymi finansowymi. Materiał ważny dla osób przetwarzających dokumenty kosztowe oraz zarządzających dużymi zbiorami plików.'
     },
-    desc: 'Anglojęzyczna demonstracja dwóch konkretnych zastosowań Claude Cowork. Pierwsza część prezentuje proces porządkowania chaotycznego folderu pobranych plików — sortowanie według typów, oznaczanie duplikatów i propozycje organizacji. Druga część pokazuje przetworzenie zdjęć paragonów w arkusz Excela zawierający formuły SUMIF i COUNTIF oraz wykres podsumowujący wydatki według kategorii. Wycinka pomija wstęp dotyczący instalacji oraz przejście do trzeciego demo.',
+    desc: 'Anglojęzyczna demonstracja dwóch konkretnych zastosowań Claude Cowork. Pierwsza część prezentuje proces porządkowania chaotycznego folderu pobranych plików — sortowanie według typów, oznaczanie duplikatów i propozycje organizacji. Druga część pokazuje przetworzenie zdjęć paragonów w arkusz Excela zawierający formuły SUMIF i COUNTIF oraz wykres podsumowujący wydatki według kategorii. Wycinek pomija wstęp dotyczący instalacji.',
     zadanie: 'Spróbuj odwzorować drugie demo na pięciu własnych paragonach lub fakturach niewrażliwych. Sprawdź jakość rozpoznania kwot i kategoryzacji.'
   },
   {
     id: 'B2b', videoId: 'vv09DHej6gg',
     title: 'Cowork w praktyce — synteza notatek i zaplanowane zadania',
     author: "Teacher's Tech",
-    lang: 'en', duration: 268,
-    start: 720, end: 988,
+    lang: 'en', duration: 296,
+    start: 694, end: 990,
     section: 'level1',
     intro: {
       about: 'Druga część anglojęzycznego materiału o Cowork — synteza rozproszonych notatek oraz mechanizm zaplanowanych zadań.',
@@ -575,8 +586,8 @@ const playlist = [
     section: 'level1',
     intro: {
       about: 'Oficjalne wideo Anthropic prezentujące przyspieszenie pełnego cyklu transakcyjnego private equity — od teasera do rekomendacji inwestycyjnej — z wykorzystaniem Claude.',
-      takeaway: 'Zobaczysz pełen przebieg deal flow na przykładzie spółki Horizon Health Group o wartości osiemdziesięciu pięciu milionów dolarów: generowanie teasera w dwie minuty, budowę modelu LBO ze screening memo, due diligence z analizą data room, identyfikację ryzyk koncentracji klientów, model wyceny przy mnożniku jedenastokrotnym EBITDA z pięciokrotnym lewarem, projekcje przepływów pieniężnych, IRR scenariusza bazowego na poziomie dwudziestu sześciu procent, MOIC trzykrotny oraz analizę wrażliwości na mnożniki wyjścia. Materiał kończy się rekomendacją Letter of Intent.',
-      part: 'Kluczowy materiał branżowy — pokazuje workflow funduszu private equity od początku do końca. Adresuje lukę dotyczącą modeli finansowych w kontekście branżowym.'
+      takeaway: 'Zobaczysz pełen przebieg deal flow na przykładzie transakcji o wartości 85 mln USD: generowanie teasera, budowę modelu LBO ze screening memo, due diligence z analizą data room, wycenę przy mnożniku 11x EBITDA z pięciokrotnym lewarem oraz analizę zwrotów (IRR, MOIC) wraz z testem wrażliwości na mnożniki wyjścia. Materiał kończy się rekomendacją Letter of Intent dla komitetu inwestycyjnego.',
+      part: 'Kluczowy materiał branżowy — pokazuje workflow funduszu private equity od teasera do rekomendacji inwestycyjnej, łącznie z modelem finansowym.'
     },
     desc: 'Oficjalna prezentacja Anthropic przedstawiająca zastosowanie Claude w pełnym procesie inwestycyjnym private equity. Materiał prowadzi widza przez transakcję spółki Horizon Health Group: generowanie deal teasera w dwie minuty, budowę modelu LBO i screening memo, due diligence z analizą data room obejmującą identyfikację ryzyk koncentracji klientów oraz wygasających kontraktów, kalkulację ceny zakupu przy mnożniku jedenastokrotnym EBITDA z pięciokrotnym lewarem, projekcje przepływów pieniężnych z amortyzacją zadłużenia, IRR bazowe na poziomie dwudziestu sześciu procent i MOIC trzykrotny, stress test scenariusza pesymistycznego, analizę wrażliwości na mnożniki wyjścia oraz finalną rekomendację Letter of Intent dla komitetu inwestycyjnego.',
     zadanie: 'Wybierz jeden etap z prezentacji (teaser, screening memo lub analizę wrażliwości) i odwzoruj go na zanonimizowanych danych z własnego pipeline transakcyjnego.'
@@ -591,24 +602,24 @@ const playlist = [
     intro: {
       about: 'Krótka demonstracja workflow do automatycznej analizy umów NDA z generowaniem wersji ze śledzonymi zmianami.',
       takeaway: 'Zobaczysz, jak stworzyć projekt zawierający standardowe warunki firmowe, jak go skonfigurować poprzez instrukcje projektowe, oraz jak przetwarzać przychodzące umowy NDA z automatycznym generowaniem podsumowania, oznaczonych ryzyk oraz pełnej wersji z trybem śledzenia zmian gotowej do dyskusji z prawnikami.',
-      part: 'Praktyczny przykład workflow compliance — dotyczy bezpośrednio analizy umów i dokumentów prawnych. Adresuje lukę dotyczącą NDA reviewer.'
+      part: 'Praktyczny przykład workflow compliance — dotyczy bezpośrednio analizy umów i dokumentów prawnych.'
     },
-    desc: 'Praktyczna demonstracja workflow do analizy umów NDA. Trener pokazuje budowę projektu zawierającego standardowe warunki firmowe i instrukcje analityczne, a następnie demonstruje proces przetwarzania przychodzącej umowy: Claude automatycznie generuje podsumowanie kluczowych zapisów, oznaczone ryzyka oraz pełną wersję dokumentu z trybem śledzenia zmian gotową do przekazania do działu prawnego lub do negocjacji. Materiał pokazuje również, jak adaptować workflow do własnego stylu i niegodzialnych klauzul.',
+    desc: 'Praktyczna demonstracja workflow do analizy umów NDA. Trener pokazuje budowę projektu zawierającego standardowe warunki firmowe i instrukcje analityczne, a następnie demonstruje proces przetwarzania przychodzącej umowy: Claude automatycznie generuje podsumowanie kluczowych zapisów, oznaczone ryzyka oraz pełną wersję dokumentu z trybem śledzenia zmian gotową do przekazania do działu prawnego lub do negocjacji. Materiał pokazuje również, jak adaptować workflow do własnego stylu negocjacyjnego i nienegocjowalnych klauzul.',
     zadanie: 'Stwórz projekt NDA reviewer z własnym zestawem standardowych warunków. Wgraj jedną przykładową umowę i porównaj wynik z manualnym przeglądem.'
   },
   {
-    id: 'D8', videoId: 'P7W4GwXR16E',
-    title: 'Zarządzanie ustawieniami prywatności w Claude',
-    author: 'BM Tech Tutorials',
-    lang: 'en', duration: 168,
-    start: 0, end: null,
+    id: 'D8', videoId: 'uCHUGtMh9kc',
+    title: 'Prywatność w Claude — wyłączenie trenowania na danych użytkownika',
+    author: 'Innovative Minds',
+    lang: 'en', duration: 70,
+    start: 54, end: null,
     section: 'level1',
     intro: {
-      about: 'Krótki materiał instruktażowy o zarządzaniu ustawieniami prywatności konta Claude w interfejsie użytkownika.',
-      takeaway: 'Nauczysz się, jak usuwać pojedyncze konwersacje, jak czyścić historię zbiorowo, oraz — co najważniejsze — jak wyłączyć opcję "Help improve Claude" w zakładce Privacy, czyli udostępnianie własnej zawartości do trenowania modeli. Materiał pokazuje również procedurę usunięcia konta.',
+      about: 'Krótki materiał instruktażowy pokazujący, jak w ustawieniach konta Claude wyłączyć wykorzystywanie rozmów do trenowania modeli.',
+      takeaway: 'Nauczysz się, jak dotrzeć do zakładki Privacy w ustawieniach konta oraz jak wyłączyć przełącznik "Help improve Claude", odpowiadający za udostępnianie treści rozmów i sesji do trenowania modeli Anthropic.',
       part: 'Praktyczna część obejmująca bezpieczeństwo danych. Materiał dotyczy poziomu interfejsu — zasady na poziomie organizacji omawiane są oddzielnie.'
     },
-    desc: 'Materiał instruktażowy dotyczący ustawień prywatności konta Claude. Trener prowadzi przez logowanie, usuwanie pojedynczych konwersacji, czyszczenie zbiorowe historii oraz konfigurację głównej opcji prywatności — przełącznika "Help improve Claude" w zakładce Privacy, którego wyłączenie ogranicza wykorzystanie zawartości użytkownika do rozwoju modeli. Materiał obejmuje również procedurę trwałego usunięcia konta wraz z konsekwencjami tej decyzji.',
+    desc: 'Materiał instruktażowy dotyczący kluczowego ustawienia prywatności konta Claude. Trener prowadzi przez ustawienia konta do zakładki Privacy i pokazuje przełącznik "Help improve Claude", którego wyłączenie zatrzymuje wykorzystywanie treści rozmów oraz sesji kodowania do trenowania modeli Anthropic. Wycinek pomija wprowadzenie autora kanału.',
     zadanie: 'Sprawdź ustawienia prywatności swojego konta Claude i upewnij się, że opcja udostępniania treści do trenowania modelu jest skonfigurowana zgodnie z polityką organizacji.'
   },
   {
@@ -647,8 +658,8 @@ const playlist = [
     id: 'C1a', videoId: 'X3uum6W2xEI',
     title: 'Dlaczego Skills mają znaczenie',
     author: 'Ben AI',
-    lang: 'en', duration: 82,
-    start: 31, end: 113,
+    lang: 'en', duration: 98,
+    start: 35, end: 133,
     section: 'level2',
     intro: {
       about: 'Krótkie strategiczne uzasadnienie roli Skills w pracy z modelami AI — dlaczego mechanizm ten zmienia sposób korzystania z narzędzi.',
@@ -662,8 +673,8 @@ const playlist = [
     id: 'C1b', videoId: 'X3uum6W2xEI',
     title: 'Skills — architektura, typy i framework projektowania',
     author: 'Ben AI',
-    lang: 'en', duration: 581,
-    start: 320, end: 901,
+    lang: 'en', duration: 568,
+    start: 330, end: 898,
     section: 'level2',
     intro: {
       about: 'Pogłębiony materiał o mechanice działania Skills oraz framework do projektowania własnych instrukcji o wysokiej jakości.',
@@ -671,14 +682,14 @@ const playlist = [
       part: 'Część rozszerzona — materiał techniczny adresowany do osób, które chcą budować własne firmowe biblioteki Skills.'
     },
     desc: 'Pogłębiony materiał techniczny dotyczący architektury Skills. Trener wyjaśnia mechanizm wyboru Skill spośród wielu dostępnych, omawia różnicę względem Plugins, klasyfikuje Skills na trzy typy: oparte na wiedzy (knowledge), oparte na procedurach (workflow) oraz agentowe (agent). Druga część prezentuje framework projektowania Skills obejmujący planowanie wyników, inżynierię kontekstu, projektowanie punktów akceptacji człowieka oraz iteracyjne dopracowywanie instrukcji.',
-    zadanie: 'Zaprojektuj jeden własny Skill według prezentowanego frameworka i przygotuj go do przeglądu na sesji warsztatowej.'
+    zadanie: 'Zaprojektuj jeden własny Skill według prezentowanego frameworka i przetestuj go na rzeczywistym zadaniu ze swojej pracy.'
   },
   {
     id: 'C2', videoId: 'rlIy7b-3DC8',
     title: 'Cowork w pracy projektowej z perspektywy zespołu Anthropic',
     author: 'Jenny Wen, Anthropic',
-    lang: 'en', duration: 1088,
-    start: 301, end: 1389,
+    lang: 'en', duration: 1087,
+    start: 298, end: 1385,
     section: 'level2',
     intro: {
       about: 'Rozmowa z liderką designu Cowork w Anthropic — Jenny Wen prezentuje, jak na co dzień wykorzystuje narzędzie do pracy z nieuporządkowanymi danymi badawczymi.',
@@ -720,17 +731,17 @@ const playlist = [
   },
   {
     id: 'C3c', videoId: 'duRvQ290nTw',
-    title: 'Cowork w pracy z arkuszami — od CSV do dashboardu',
+    title: 'Cowork w pracy z arkuszami — czyszczenie i normalizacja danych CSV',
     author: 'Vivek Mishra',
     lang: 'en', duration: 307,
     start: 3961, end: 4268,
     section: 'level2',
     intro: {
-      about: 'Wycinek prezentujący czyszczenie, normalizację oraz wizualizację danych tabelarycznych za pomocą Claude Cowork.',
-      takeaway: 'Zobaczysz pełen proces przetwarzania danych tabelarycznych: czyszczenie surowego pliku CSV, normalizację formatów, identyfikację błędów oraz wygenerowanie interaktywnej wizualizacji prezentującej kluczowe wzorce i trendy.',
+      about: 'Wycinek prezentujący czyszczenie i normalizację danych tabelarycznych w Claude Cowork przed ich dalszym udostępnieniem.',
+      takeaway: 'Zobaczysz pełen proces porządkowania danych tabelarycznych: czyszczenie surowego pliku CSV, normalizację formatów oraz identyfikację i poprawę błędów w danych przed przekazaniem pliku współpracownikom lub księgowości.',
       part: 'Część rozszerzona — materiał dla osób pracujących z modelami finansowymi, analizą tabelaryczną oraz przygotowywaniem danych do prezentacji.'
     },
-    desc: 'Wycinek prezentujący zaawansowane przetwarzanie danych tabelarycznych w Claude Cowork. Trener demonstruje proces od surowego pliku CSV z błędami formatowania, poprzez automatyczne czyszczenie i normalizację, aż do wygenerowania interaktywnej wizualizacji prezentującej kluczowe wzorce i trendy zidentyfikowane w danych.',
+    desc: 'Wycinek prezentujący zaawansowane przetwarzanie danych tabelarycznych w Claude Cowork. Trener demonstruje proces od surowego pliku CSV z błędami formatowania, poprzez automatyczne czyszczenie i normalizację, aż do uporządkowanego pliku gotowego do udostępnienia współpracownikom lub księgowości.',
     zadanie: ''
   }
 ];
@@ -831,6 +842,8 @@ function renderNowPlaying() {
   const ytLink = document.getElementById('ytBackupBtn');
   const startParam = item.start ? `&t=${item.start}s` : '';
   ytLink.href = `https://www.youtube.com/watch?v=${item.videoId}${startParam}`;
+  document.getElementById('prevBtn').disabled = currentIndex === 0;
+  document.getElementById('nextBtn').disabled = currentIndex === playlist.length - 1;
 }
 
 function updateStats() {
@@ -896,39 +909,49 @@ function confirmIntroAndPlay() {
 // =========================================================================
 function buildSrc(item, autoplay) {
   const start = item.start || 0;
-  const params = [`start=${start}`, 'rel=0', 'modestbranding=1', 'playsinline=1'];
+  const params = [`start=${start}`, 'rel=0', 'modestbranding=1', 'playsinline=1', 'enablejsapi=1'];
+  if (location.origin && location.origin.indexOf('http') === 0) {
+    params.push(`origin=${encodeURIComponent(location.origin)}`);
+  }
   if (item.end) params.push(`end=${item.end}`);
   if (autoplay) params.push('autoplay=1');
   return `https://www.youtube.com/embed/${item.videoId}?${params.join('&')}`;
+}
+
+let segmentEndHandled = false;
+
+function handleSegmentEnd(modalDelayMs) {
+  if (segmentEndHandled) return;
+  segmentEndHandled = true;
+  if (endTimer) { clearTimeout(endTimer); endTimer = null; }
+  const cur = playlist[currentIndex];
+  setCompleted(cur.id, true);
+  const isLastLevel1 = currentIndex === playlist.findLastIndex(p => p.section === 'level1');
+  const isLastLevel2 = currentIndex === playlist.length - 1;
+  const nextIsSameSection = currentIndex + 1 < playlist.length &&
+    playlist[currentIndex + 1].section === cur.section;
+  updateStats();
+  renderPlaylist();
+  renderNowPlaying();
+  const shouldAdvance = (cur.section === 'level1' && !isLastLevel1 && nextIsSameSection) ||
+                       (cur.section === 'level2' && !isLastLevel2 && nextIsSameSection);
+  if (shouldAdvance) {
+    setTimeout(() => showIntroModal(currentIndex + 1), modalDelayMs || 0);
+  }
 }
 
 function loadIdx(idx, autoplay) {
   if (idx < 0 || idx >= playlist.length) return;
   currentIndex = idx;
   setCurrentIdx(idx);
+  segmentEndHandled = false;
   const item = playlist[idx];
   const iframe = document.getElementById('player');
   iframe.src = buildSrc(item, !!autoplay);
 
   if (endTimer) clearTimeout(endTimer);
-  const isLastLevel1 = currentIndex === playlist.findLastIndex(p => p.section === 'level1');
-  const isLastLevel2 = currentIndex === playlist.length - 1;
-  const nextIsSameSection = currentIndex + 1 < playlist.length &&
-    playlist[currentIndex + 1].section === item.section;
-  const shouldAdvance = (item.section === 'level1' && !isLastLevel1 && nextIsSameSection) ||
-                       (item.section === 'level2' && !isLastLevel2 && nextIsSameSection);
-
   if (autoplay) {
-    endTimer = setTimeout(() => {
-      const cur = playlist[currentIndex];
-      setCompleted(cur.id, true);
-      updateStats();
-      renderPlaylist();
-      renderNowPlaying();
-      if (shouldAdvance) {
-        showIntroModal(currentIndex + 1);
-      }
-    }, (item.duration + 2) * 1000);
+    endTimer = setTimeout(() => handleSegmentEnd(0), (item.duration + 2) * 1000);
   }
 
   renderPlaylist();
@@ -940,34 +963,23 @@ window.addEventListener('message', (e) => {
   if (!e.data || typeof e.data !== 'string') return;
   let data;
   try { data = JSON.parse(e.data); } catch (err) { return; }
-  if (data.event === 'onStateChange' && data.info === 0) {
-    if (endTimer) { clearTimeout(endTimer); endTimer = null; }
-    const cur = playlist[currentIndex];
-    setCompleted(cur.id, true);
-    const isLastLevel1 = currentIndex === playlist.findLastIndex(p => p.section === 'level1');
-    const isLastLevel2 = currentIndex === playlist.length - 1;
-    const nextIsSameSection = currentIndex + 1 < playlist.length &&
-      playlist[currentIndex + 1].section === cur.section;
-    updateStats();
-    renderPlaylist();
-    renderNowPlaying();
-    const shouldAdvance = (cur.section === 'level1' && !isLastLevel1 && nextIsSameSection) ||
-                         (cur.section === 'level2' && !isLastLevel2 && nextIsSameSection);
-    if (shouldAdvance) {
-      setTimeout(() => showIntroModal(currentIndex + 1), 800);
-    }
-  }
+  const ended = (data.event === 'onStateChange' && data.info === 0) ||
+    (data.event === 'infoDelivery' && data.info && data.info.playerState === 0);
+  if (ended) handleSegmentEnd(800);
 });
 
 document.getElementById('player').addEventListener('load', () => {
-  setTimeout(() => {
-    const iframe = document.getElementById('player');
-    if (!iframe.contentWindow) return;
-    try {
-      iframe.contentWindow.postMessage('{"event":"listening","id":1,"channel":"avallon"}', '*');
-      iframe.contentWindow.postMessage('{"event":"command","func":"addEventListener","args":["onStateChange"]}', '*');
-    } catch (err) {}
-  }, 500);
+  // Handshake z YouTube iframe API — ponawiany, bo player potrzebuje chwili na inicjalizację
+  [500, 1500, 3000].forEach(delay => {
+    setTimeout(() => {
+      const iframe = document.getElementById('player');
+      if (!iframe.contentWindow) return;
+      try {
+        iframe.contentWindow.postMessage('{"event":"listening","id":1,"channel":"widget"}', '*');
+        iframe.contentWindow.postMessage('{"event":"command","func":"addEventListener","args":["onStateChange"],"id":1,"channel":"widget"}', '*');
+      } catch (err) {}
+    }, delay);
+  });
 });
 
 // =========================================================================
