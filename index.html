@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avallon — szkolenie Claude</title>
+<style>
+:root {
+  --navy: #1F4E79;
+  --navy-dark: #15375A;
+  --gold: #96682c;
+  --green: #548235;
+  --orange: #C55A11;
+  --red: #C00000;
+  --bg: #F9F7F2;
+  --grey-light: #F2F2F2;
+  --grey: #BFBFBF;
+  --grey-dark: #595959;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: #222;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+header {
+  background: var(--navy);
+  color: white;
+  padding: 18px 32px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+}
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.header-title h1 {
+  font-size: 19px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.header-title p {
+  font-size: 12px;
+  opacity: 0.85;
+}
+.header-stats {
+  text-align: right;
+  font-size: 12px;
+  opacity: 0.92;
+}
+.header-stats strong { font-size: 16px; display: block; }
+.progress-bar {
+  margin-top: 12px;
+  background: rgba(255,255,255,0.18);
+  border-radius: 10px;
+  height: 6px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), #d4a86a);
+  transition: width 0.5s ease;
+  border-radius: 10px;
+}
+.layout {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 1080px) {
+  .layout { grid-template-columns: 1fr; }
+}
+.player-section { min-width: 0; }
+.player-wrap {
+  position: relative;
+  width: 100%;
+  padding-bottom: 56.25%;
+  background: #000;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+#player {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.player-fallback {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  color: white;
+  background: #111;
+  text-align: center;
+}
+.player-fallback::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--fallback-thumb, none) center / cover no-repeat;
+  opacity: 0.32;
+  filter: grayscale(0.2);
+}
+.player-fallback-content {
+  position: relative;
+  max-width: 560px;
+  background: rgba(0,0,0,0.68);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 8px;
+  padding: 22px 24px;
+}
+.player-fallback h3 {
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+.player-fallback p {
+  font-size: 13px;
+  color: rgba(255,255,255,0.88);
+  margin-bottom: 14px;
+}
+.player-fallback .fallback-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.now-playing {
+  background: white;
+  padding: 22px 26px;
+  border-radius: 10px;
+  margin-top: 16px;
+  border-left: 4px solid var(--navy);
+}
+.now-playing .label {
+  font-size: 11px;
+  color: var(--gold);
+  letter-spacing: 1.2px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.now-playing h2 {
+  font-size: 19px;
+  color: var(--navy-dark);
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+.now-playing .author {
+  font-size: 13px;
+  color: var(--grey-dark);
+  margin-bottom: 10px;
+}
+.now-playing .desc {
+  font-size: 14px;
+  color: #333;
+  margin: 12px 0;
+  padding: 12px 14px;
+  background: #F8F8F4;
+  border-left: 3px solid var(--gold);
+  border-radius: 0 6px 6px 0;
+}
+.now-playing .desc strong { color: var(--navy-dark); }
+.now-playing .zadanie {
+  font-size: 14px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: #FFFAE6;
+  border-left: 3px solid var(--orange);
+  border-radius: 0 6px 6px 0;
+}
+.now-playing .zadanie strong { color: var(--orange); }
+.btn-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.btn {
+  padding: 10px 18px;
+  border: 1.5px solid var(--grey);
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  background: white;
+  color: var(--grey-dark);
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.btn:hover { border-color: var(--navy); color: var(--navy); }
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  background: var(--grey-light);
+  color: var(--grey-dark);
+  border-color: var(--grey);
+}
+.btn-primary {
+  background: var(--green);
+  color: white;
+  border-color: var(--green);
+  font-weight: 600;
+}
+.btn-primary:hover {
+  background: #6c9c47;
+  color: white;
+  border-color: #6c9c47;
+}
+.btn-next { background: var(--navy); color: white; border-color: var(--navy); font-weight: 600; }
+.btn-next:hover { background: var(--navy-dark); color: white; }
+.playlist {
+  background: white;
+  border-radius: 10px;
+  padding: 8px;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+  position: sticky;
+  top: 130px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.playlist-header {
+  padding: 14px 18px 8px;
+  border-bottom: 1px solid var(--grey-light);
+  margin-bottom: 6px;
+}
+.playlist-header h3 {
+  font-size: 14px;
+  color: var(--navy);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.playlist-header .meta {
+  font-size: 11px;
+  color: var(--grey-dark);
+  margin-top: 2px;
+}
+.section-divider {
+  padding: 14px 18px 6px;
+  margin-top: 12px;
+  border-top: 1px solid var(--grey-light);
+}
+.section-divider h3 {
+  font-size: 13px;
+  color: var(--gold);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.section-divider .meta {
+  font-size: 11px;
+  color: var(--grey-dark);
+  margin-top: 2px;
+}
+.playlist-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  align-items: flex-start;
+}
+.playlist-item:hover { background: var(--grey-light); }
+.playlist-item.active {
+  background: #E8EEF5;
+  border-left: 3px solid var(--navy);
+  padding-left: 11px;
+}
+.playlist-item.completed { opacity: 0.6; }
+.playlist-item.completed .item-number { background: var(--green); }
+.item-number {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  background: var(--navy);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+.playlist-item.bonus .item-number { background: var(--gold); }
+.item-content { flex: 1; min-width: 0; }
+.item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--navy-dark);
+  margin-bottom: 3px;
+  line-height: 1.3;
+}
+.item-meta {
+  font-size: 11px;
+  color: var(--grey-dark);
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.item-meta .lang-pl { background: #FFEBCD; color: #8B4513; padding: 1px 6px; border-radius: 3px; }
+.item-meta .lang-en { background: #E0F0FF; color: #1F4E79; padding: 1px 6px; border-radius: 3px; }
+.luki-card {
+  background: #FFF4F4;
+  border-left: 4px solid var(--red);
+  padding: 18px 22px;
+  border-radius: 8px;
+  margin-top: 20px;
+  font-size: 13px;
+}
+.luki-card h3 { color: var(--red); margin-bottom: 8px; font-size: 14px; }
+.luki-card p { color: var(--grey-dark); margin-bottom: 4px; }
+.completion-banner {
+  background: linear-gradient(135deg, var(--green), #6c9c47);
+  color: white;
+  padding: 20px 26px;
+  border-radius: 10px;
+  margin-top: 16px;
+  text-align: center;
+  display: none;
+}
+.completion-banner h2 { font-size: 22px; margin-bottom: 6px; }
+.completion-banner p { font-size: 14px; opacity: 0.95; }
+.reset-link {
+  font-size: 11px;
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  margin-top: 6px;
+  display: inline-block;
+}
+.reset-link:hover { color: white; text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<script>
+(function() {
+  const STORED = sessionStorage.getItem('avallon_auth');
+  if (STORED === 'ok') return;
+  const pwd = prompt('Podaj hasło dostępu:');
+  // Hasz haslo: avallon2026
+  const correctHash = '7b56b3ddd96c8f1c4f7e8e3b9c4e2d5a';
+  // Use simple obfuscation: convert input to lowercase, trim
+  if (pwd && pwd.trim().toLowerCase() === 'avallon2026') {
+    sessionStorage.setItem('avallon_auth', 'ok');
+  } else {
+    document.documentElement.innerHTML = '<body style="font-family:sans-serif;padding:40px;background:#1F4E79;color:white;text-align:center;"><h1>Avallon — szkolenie Claude</h1><p>Nieprawidłowe hasło. Odśwież stronę aby spróbować ponownie.</p></body>';
+    throw new Error('Auth failed');
+  }
+})();
+</script>
+
+
+<header>
+  <div class="header-top">
+    <div class="header-title">
+      <h1>Avallon — szkolenie Claude</h1>
+      <p>Kliknij „Start automatyczny”. Po skończeniu odcinka następny startuje automatycznie.</p>
+    </div>
+    <div class="header-stats">
+      <strong id="statCount">0/13</strong>
+      <span id="statTime">0 z ~113 min</span>
+    </div>
+  </div>
+  <div class="progress-bar">
+    <div class="progress-bar-fill" id="progressFill" style="width: 0%"></div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <div class="player-section">
+    <div class="player-wrap">
+      <iframe id="player" src="" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+      <div class="player-fallback" id="playerFallback" aria-live="polite">
+        <div class="player-fallback-content">
+          <h3 id="fallbackTitle">Odtwarzacz YouTube wymaga trybu HTTP</h3>
+          <p id="fallbackText">Chrome blokuje poprawną konfigurację osadzonego YouTube przy otwarciu pliku bezpośrednio z dysku. Użyj start.sh / start.bat albo otwórz odcinek w YouTube.</p>
+          <div class="fallback-actions">
+            <a class="btn btn-next" id="fallbackYtBtn" href="#" target="_blank" rel="noopener" style="text-decoration:none;">Otwórz w YouTube ↗</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="now-playing" id="nowPlayingBox">
+      <div class="label">Aktualnie odtwarzane</div>
+      <h2 id="npTitle">Ładowanie...</h2>
+      <div class="author" id="npAuthor"></div>
+      <div class="desc" id="npDesc"></div>
+      <div class="zadanie" id="npZadanie"></div>
+      <div class="btn-row">
+        <button class="btn btn-next" id="startBtn">Start automatyczny</button>
+        <button class="btn btn-primary" id="markBtn">Oznacz jako obejrzane</button>
+        <button class="btn btn-next" id="nextBtn">Następny odcinek →</button>
+        <button class="btn" id="prevBtn">← Poprzedni</button>
+        <a class="btn" id="ytBackupBtn" href="#" target="_blank" rel="noopener" style="text-decoration:none;">Otwórz w YouTube ↗</a>
+      </div>
+    </div>
+
+    <div class="completion-banner" id="completionBanner">
+      <h2>Skończyłeś szkolenie 🎉</h2>
+      <p>Pokryłeś 7 odcinków podstawowych. Bonus dla power-userów jest opcjonalny i nie uruchamia się automatycznie.</p>
+      <span class="reset-link" id="resetLink">Zacznij od nowa</span>
+    </div>
+
+    <div class="luki-card">
+      <h3>Czego nie pokrywają filmy — uzupełniają sesje wewnętrzne</h3>
+      <p><strong>1. Plan Team vs prywatny Pro/Max.</strong> Prywatne konta mają trenowanie WŁĄCZONE domyślnie + retencja 5 lat. Migrujemy konto Olszewskiej na Team przed pilotem.</p>
+      <p><strong>2. Audit logs / Compliance API.</strong> Cowork jest wykluczony z audit logów Anthropic. ZAKAZ Cowork dla regulowanych dokumentów (CSSF / SFDR / NIS2 / CSDR / AIFMD).</p>
+      <p><strong>3. Modele finansowe PE-specific.</strong> Brodziak prowadzi live demo Tygodnia 3 — TB → P&L + BS → EBITDA → IRR.</p>
+      <p><strong>4. Polityka R/Y/G klasyfikacja danych.</strong> Sesja #1 (8–12 czerwca) Mateusz + Rudzka. 1-pager wręczany przed pierwszym filmem.</p>
+    </div>
+  </div>
+
+  <div class="playlist" id="playlistEl">
+    <div class="playlist-header">
+      <h3>Plan szkolenia</h3>
+      <div class="meta">Podstawy (~70 min) — wszyscy 14 osób</div>
+    </div>
+    <!-- Items injected by JS -->
+  </div>
+
+</div>
+
+<script>
+// =========================================================================
+// PLAYLIST DEFINITION
+// =========================================================================
+const playlist = [
+  // CORE — wszyscy 14 osób
+  {
+    id: 'A1', videoId: 'T7dad3lUkUc',
+    title: 'Claude — podstawy w 15 min',
+    author: 'Jacek Bąk · FINPREP',
+    lang: 'pl', duration: 888,
+    start: 0, end: null,
+    section: 'core',
+    desc: '<strong>Co pokrywa:</strong> Czym Claude różni się od ChatGPT, 3 zasady promptowania (kontekst + zadanie + zasady), kiedy używać Opus/Sonnet/Haiku, Extended Thinking, Research, Projects, Artifacts, Skills, Connectors, MCP. Kompresja kursu Anthropic Claude 101 (3h → 15 min).',
+    zadanie: '<strong>Po obejrzeniu:</strong> Otwórz claude.ai, wyślij pierwszy prompt na własnym przykładzie z pracy. Zaobserwuj różnicę między Sonnet a Opus na tym samym pytaniu.'
+  },
+  {
+    id: 'A3', videoId: 'XTWb5oEfqdY',
+    title: '3 poziomy Claude — wyciętki Level 1+2+3',
+    author: 'The AI Productivity Coach',
+    lang: 'en', duration: 640,
+    start: 130, end: 770,
+    section: 'core',
+    desc: '<strong>Co pokrywa:</strong> Level 1 (Chat, Web Search, Artifacts, Memory, Projects, Custom Style), Level 2 (Connectors, Skills, Extended Thinking, Research mode), Level 3 (Cowork, Claude Code, Computer Use). <strong>Krytyczna mapa różnic między 3 produktami Claude</strong> (luka z ankiety: 2.83/5).',
+    zadanie: '<strong>Po obejrzeniu:</strong> Stwórz pierwszy własny Project w Claude. Wgraj 2 dokumenty (np. notatka + raport). Zadaj pytanie wymagające obu plików.'
+  },
+  {
+    id: 'A2', videoId: 'oH03g6zC874',
+    title: 'Claude Cowork w praktyce',
+    author: 'Jacek Bąk',
+    lang: 'pl', duration: 932,
+    start: 0, end: null,
+    section: 'core',
+    desc: '<strong>Co pokrywa:</strong> Czym Cowork różni się od chatu i Claude Code, instalacja, praca z plikami i folderami, Skills + Connectors w Cowork, automatyzacje. Demo: porządkowanie faktur do Excela, research, prezentacje. <strong>Segment zamykający: bezpieczeństwo danych — ważny dla Rudzkiej.</strong>',
+    zadanie: '<strong>Po obejrzeniu:</strong> Zainstaluj Claude Desktop (claude.com/download). Wskaż mu folder z plikami niewrażliwymi. Zleć: „uporządkuj te pliki i powiedz co znalazłeś".'
+  },
+  {
+    id: 'B1', videoId: 'jCr8LHafFdU',
+    title: 'Claude Skills — 5 zastosowań',
+    author: 'Jacek Bąk',
+    lang: 'pl', duration: 696,
+    start: 0, end: null,
+    section: 'core',
+    desc: '<strong>Co pokrywa:</strong> (1) brandowy silnik raportów (logo + kolory + PDF — szablon Avallon), (2) <strong>analiza sprawozdań finansowych kontrahentów</strong>, (3) <strong>tool compliance analizujący akty prawne</strong> (CSSF/SFDR/NIS2 — dla Rudzkiej), (4) Skill jako system kompetencji, (5) dyktanda (pomiń).',
+    zadanie: '<strong>Po obejrzeniu:</strong> Buduj 1 własny Skill na swój use case (Rudzka — NDA reviewer; Laskowski — sanity-check memo; Konarski — analiza dokumentów PE).'
+  },
+  {
+    id: 'B2a', videoId: 'vv09DHej6gg',
+    title: 'Cowork demo — porządkowanie folderu + paragony → Excel',
+    author: 'Teacher\'s Tech',
+    lang: 'en', duration: 391,
+    start: 301, end: 692,
+    section: 'core',
+    desc: '<strong>Co pokrywa:</strong> Demo 1 — porządkowanie messy Downloads folder (dla Olszewskiej — umowy). Demo 2 — zdjęcia paragonów → Excel z formułami i wykresami (dla Sekury — Taxxo replacement, Laskowskiego — OCR).',
+    zadanie: '<strong>Po obejrzeniu:</strong> Spróbuj Demo 2 na 5 własnych paragonach lub fakturach (niewrażliwych).'
+  },
+  {
+    id: 'B2b', videoId: 'vv09DHej6gg',
+    title: 'Cowork demo — rozproszone notatki → raport + Scheduled Tasks',
+    author: 'Teacher\'s Tech',
+    lang: 'en', duration: 268,
+    start: 720, end: 988,
+    section: 'core',
+    desc: '<strong>Co pokrywa:</strong> Demo 3 — rozproszone notatki + web research → polished raport (workflow generowania memo). Scheduled Tasks — np. „każdy poniedziałek 8:00 — briefing rynkowy".',
+    zadanie: '<strong>Po obejrzeniu:</strong> Uruchom 1 scheduled task (np. „każdy poniedziałek 8:00 — briefing rynkowy z 3 źródeł").'
+  },
+  {
+    id: 'B3', videoId: 'eljQaEXMNss',
+    title: 'Cowork: AI szpieguje konkurencję',
+    author: 'Claude Code Lab',
+    lang: 'pl', duration: 402,
+    start: 0, end: null,
+    section: 'core',
+    desc: '<strong>Co pokrywa:</strong> Cowork + Claude in Chrome → analiza 3 firm konkurencyjnych → gotowy Excel z porównaniem. <strong>Dla Avallon:</strong> sektor mapping i identyfikacja targetów (Brodziak Q4 ankiety), quarterly review konkurencji portfela (Pakulska).',
+    zadanie: '<strong>Po obejrzeniu:</strong> Spróbuj na 3 zanonimizowanych spółkach z Twojego sektora — sprawdź jakość Excel output.'
+  },
+
+  // BONUS — power-userzy (Ciąćka, Jaskóła, Brodziak, Mateusz)
+  {
+    id: 'C1a', videoId: 'X3uum6W2xEI',
+    title: 'Bonus: Why Skills Matter',
+    author: 'Ben AI',
+    lang: 'en', duration: 53,
+    start: 60, end: 113,
+    section: 'bonus',
+    desc: '<strong>Co pokrywa:</strong> Strategiczne uzasadnienie dlaczego Skills to game-changer dla zespołów AI.',
+    zadanie: ''
+  },
+  {
+    id: 'C1b', videoId: 'X3uum6W2xEI',
+    title: 'Bonus: Skills framework + Quality + Planning',
+    author: 'Ben AI',
+    lang: 'en', duration: 581,
+    start: 320, end: 901,
+    section: 'bonus',
+    desc: '<strong>Co pokrywa:</strong> How Skills Work (mechanika), Skills vs Plugins, 3 Types of Skills (knowledge/workflow/agent), Building Quality Skills + Planning & Context Engineering — framework do projektowania.',
+    zadanie: '<strong>Po obejrzeniu:</strong> Zaprojektuj 1 Skill według frameworka Ben\'a. Power-userzy razem z Mateuszem przegląd designu w Tygodniu 4.'
+  },
+  {
+    id: 'C2', videoId: 'rlIy7b-3DC8',
+    title: 'Bonus: Cowork od Design Lead — głębokie demo',
+    author: 'Jenny Wen (Anthropic) z Peter Yang',
+    lang: 'en', duration: 1070,
+    start: 319, end: 1389,
+    section: 'bonus',
+    desc: '<strong>Co pokrywa:</strong> (1) Cowork demo — messy user feedback → product insights, realny workflow przetwarzania nieuporządkowanych danych do struktury — dokładnie to co robicie z DD materiałami. (2) „Co poniedziałek Cowork daje 3 vetted product ideas" — workflow advanced Skills + scheduled tasks.',
+    zadanie: '<strong>Po obejrzeniu:</strong> Zaprojektuj 1 weekly scheduled workflow dla Avallon (np. „co poniedziałek 7:00 — przegląd pipeline + 3 najważniejsze update\'y do follow-up").'
+  },
+  {
+    id: 'C3a', videoId: 'duRvQ290nTw',
+    title: 'Bonus: PDF → Dashboard (TCS Report)',
+    author: 'Vivek Mishra',
+    lang: 'en', duration: 347,
+    start: 2506, end: 2853,
+    section: 'bonus',
+    desc: '<strong>Co pokrywa:</strong> Dowolny PDF → Dashboard. Workflow „trial balance → P&L + BS + normalizacja EBITDA" dla Brodziaka i Jaskóły.',
+    zadanie: ''
+  },
+  {
+    id: 'C3b', videoId: 'duRvQ290nTw',
+    title: 'Bonus: CLAUDE.md — folder instructions + logs',
+    author: 'Vivek Mishra',
+    lang: 'en', duration: 232,
+    start: 2853, end: 3085,
+    section: 'bonus',
+    desc: '<strong>Co pokrywa:</strong> CLAUDE.md jako best practice strukturyzacji firmowych projektów Avallon — backup system + logs.',
+    zadanie: ''
+  },
+  {
+    id: 'C3c', videoId: 'duRvQ290nTw',
+    title: 'Bonus: CSV → Visual Dashboard',
+    author: 'Vivek Mishra',
+    lang: 'en', duration: 307,
+    start: 3961, end: 4268,
+    section: 'bonus',
+    desc: '<strong>Co pokrywa:</strong> CSV edit & clean + CSV → Visual Dashboard. Dla Jaskóły — modele IRR i tabele danych finansowych.',
+    zadanie: '<strong>Po obejrzeniu:</strong> Brodziak prowadzi live demo dla zespołu na własnym case TB → P&L w Tygodniu 3 (sesja hands-on).'
+  }
+];
+
+const STORAGE = 'avallon_szkolenie_v2';
+
+// =========================================================================
+// STATE
+// =========================================================================
+let player = null;
+let currentIndex = 0;
+
+function getProgress() {
+  try { return JSON.parse(localStorage.getItem(STORAGE) || '{}'); }
+  catch (e) { return {}; }
+}
+function saveProgress(p) {
+  try { localStorage.setItem(STORAGE, JSON.stringify(p)); }
+  catch (e) {}
+}
+
+function getCompleted() { return getProgress().completed || {}; }
+function getCurrentIdx() { return getProgress().current || 0; }
+function setCompleted(id, val) {
+  const p = getProgress();
+  p.completed = p.completed || {};
+  if (val) p.completed[id] = true; else delete p.completed[id];
+  saveProgress(p);
+}
+function setCurrentIdx(idx) {
+  const p = getProgress();
+  p.current = idx;
+  saveProgress(p);
+}
+
+// =========================================================================
+// RENDER
+// =========================================================================
+function renderPlaylist() {
+  const el = document.getElementById('playlistEl');
+  const completed = getCompleted();
+  let coreCount = 0, bonusCount = 0;
+  let html = '<div class="playlist-header"><h3>Plan szkolenia</h3><div class="meta">Podstawy (~70 min) — wszyscy</div></div>';
+  let lastSection = null;
+  playlist.forEach((item, idx) => {
+    if (item.section === 'bonus' && lastSection !== 'bonus') {
+      html += '<div class="section-divider"><h3>Bonus — power-userzy</h3><div class="meta">Ciąćka · Jaskóła · Brodziak · Mateusz</div></div>';
+    }
+    if (item.section === 'core') coreCount++; else bonusCount++;
+    const isActive = idx === currentIndex;
+    const isDone = !!completed[item.id];
+    const cls = ['playlist-item'];
+    if (isActive) cls.push('active');
+    if (isDone) cls.push('completed');
+    if (item.section === 'bonus') cls.push('bonus');
+    const mins = Math.floor(item.duration / 60);
+    const secs = item.duration % 60;
+    const dur = `${mins}:${secs.toString().padStart(2, '0')}`;
+    const num = isDone ? '✓' : (item.section === 'core' ? coreCount : bonusCount);
+    const langBadge = `<span class="lang-${item.lang}">${item.lang.toUpperCase()}</span>`;
+    html += `<div class="${cls.join(' ')}" data-idx="${idx}">
+      <div class="item-number">${num}</div>
+      <div class="item-content">
+        <div class="item-title">${item.title}</div>
+        <div class="item-meta">${langBadge}<span>${dur}</span></div>
+      </div>
+    </div>`;
+    lastSection = item.section;
+  });
+  el.innerHTML = html;
+  el.querySelectorAll('.playlist-item').forEach(it => {
+    it.addEventListener('click', () => loadIdx(parseInt(it.dataset.idx)));
+  });
+}
+
+function renderNowPlaying() {
+  const item = playlist[currentIndex];
+  document.getElementById('npTitle').textContent = item.title;
+  document.getElementById('npAuthor').textContent = item.author;
+  document.getElementById('npDesc').innerHTML = item.desc;
+  const z = document.getElementById('npZadanie');
+  if (item.zadanie) {
+    z.innerHTML = item.zadanie;
+    z.style.display = 'block';
+  } else {
+    z.style.display = 'none';
+  }
+  const completed = getCompleted();
+  const markBtn = document.getElementById('markBtn');
+  markBtn.textContent = completed[item.id] ? '✓ Obejrzane' : 'Oznacz jako obejrzane';
+  markBtn.style.background = completed[item.id] ? 'var(--grey)' : 'var(--green)';
+  markBtn.style.borderColor = completed[item.id] ? 'var(--grey)' : 'var(--green)';
+  // YouTube backup link with timestamp
+  const ytLink = document.getElementById('ytBackupBtn');
+  ytLink.href = youtubeWatchUrl(item);
+  document.getElementById('fallbackYtBtn').href = youtubeWatchUrl(item);
+
+  const startBtn = document.getElementById('startBtn');
+  startBtn.disabled = isFileMode();
+  startBtn.textContent = isFileMode() ? 'Start przez launcher HTTP' : 'Start automatyczny';
+  document.getElementById('prevBtn').disabled = currentIndex === 0;
+  document.getElementById('nextBtn').disabled = currentIndex === playlist.length - 1;
+}
+
+function updateStats() {
+  const completed = getCompleted();
+  const total = playlist.length;
+  const done = Object.keys(completed).filter(k => playlist.find(p => p.id === k)).length;
+  const totalSecs = playlist.reduce((s, p) => s + p.duration, 0);
+  const doneSecs = playlist.filter(p => completed[p.id]).reduce((s, p) => s + p.duration, 0);
+  const totalMins = Math.round(totalSecs / 60);
+  const doneMins = Math.round(doneSecs / 60);
+  document.getElementById('statCount').textContent = `${done}/${total}`;
+  document.getElementById('statTime').textContent = `${doneMins} z ~${totalMins} min`;
+  document.getElementById('progressFill').style.width = `${(done / total) * 100}%`;
+  // Show completion banner if all core done
+  const coreItems = playlist.filter(p => p.section === 'core');
+  const coreDone = coreItems.every(p => completed[p.id]);
+  document.getElementById('completionBanner').style.display = coreDone ? 'block' : 'none';
+}
+
+// =========================================================================
+// PLAYER (iframe-based, działa z file://)
+// =========================================================================
+let endTimer = null;
+let segmentStarted = 0;
+let autoplayOnNext = false;
+
+function isFileMode() {
+  return window.location.protocol === 'file:';
+}
+
+function isHttpMode() {
+  return window.location.protocol === 'http:' || window.location.protocol === 'https:';
+}
+
+function youtubeWatchUrl(item) {
+  const startParam = item.start ? `&t=${item.start}s` : '';
+  return `https://www.youtube.com/watch?v=${item.videoId}${startParam}`;
+}
+
+function getEmbedOrigin() {
+  return isHttpMode() ? window.location.origin : '';
+}
+
+function buildSrc(item, autoplay) {
+  const start = item.start || 0;
+  const params = [`start=${start}`, 'rel=0', 'playsinline=1', 'iv_load_policy=3'];
+  if (item.end) params.push(`end=${item.end}`);
+  if (autoplay) params.push('autoplay=1');
+  if (getEmbedOrigin()) {
+    params.push(`origin=${encodeURIComponent(getEmbedOrigin())}`);
+    params.push(`widget_referrer=${encodeURIComponent(window.location.href)}`);
+  }
+  return `https://www.youtube.com/embed/${item.videoId}?${params.join('&')}`;
+}
+
+function showFileFallback(item) {
+  const fallback = document.getElementById('playerFallback');
+  const iframe = document.getElementById('player');
+  iframe.removeAttribute('src');
+  iframe.style.display = 'none';
+  fallback.style.setProperty('--fallback-thumb', `url("https://i.ytimg.com/vi/${item.videoId}/hqdefault.jpg")`);
+  document.getElementById('fallbackTitle').textContent = 'Otwórz przez launcher HTTP, żeby włączyć autoplay';
+  document.getElementById('fallbackText').textContent = 'YouTube zwraca błąd 153 dla osadzeń uruchomionych bezpośrednio z file://, bo Chrome nie wysyła poprawnego HTTP referrera. Dwuklik nadal pokazuje plan, postęp i linki z timestampami; pełny tryb sekwencyjny uruchom przez start.sh / start.bat.';
+  fallback.style.display = 'flex';
+}
+
+function showEmbed() {
+  document.getElementById('player').style.display = 'block';
+  document.getElementById('playerFallback').style.display = 'none';
+}
+
+function shouldAutoAdvance(item) {
+  const isLastCore = currentIndex === playlist.findLastIndex(p => p.section === 'core');
+  const isLastBonus = currentIndex === playlist.length - 1;
+  return (item.section === 'core' && !isLastCore) ||
+         (item.section === 'bonus' && !isLastBonus && playlist[currentIndex + 1].section === 'bonus');
+}
+
+function scheduleSegmentEnd(item, autoplay) {
+  if (endTimer) clearTimeout(endTimer);
+  endTimer = null;
+  segmentStarted = Date.now();
+  if (!autoplay || isFileMode()) return;
+
+  endTimer = setTimeout(() => {
+    const cur = playlist[currentIndex];
+    setCompleted(cur.id, true);
+    updateStats();
+    if (shouldAutoAdvance(cur)) {
+      loadIdx(currentIndex + 1, true);
+    } else {
+      renderPlaylist();
+      renderNowPlaying();
+    }
+  }, (item.duration + 2) * 1000);
+}
+
+function loadIdx(idx, autoplay) {
+  if (idx < 0 || idx >= playlist.length) return;
+  currentIndex = idx;
+  setCurrentIdx(idx);
+  const item = playlist[idx];
+  const iframe = document.getElementById('player');
+
+  if (isFileMode()) {
+    showFileFallback(item);
+  } else {
+    showEmbed();
+    iframe.src = buildSrc(item, !!autoplay);
+  }
+  scheduleSegmentEnd(item, !!autoplay);
+
+  renderPlaylist();
+  renderNowPlaying();
+  if (!autoplay) window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+// Bonus: listen to YouTube postMessage state changes as a secondary signal
+window.addEventListener('message', (e) => {
+  if (!e.data || typeof e.data !== 'string') return;
+  let data;
+  try { data = JSON.parse(e.data); } catch (err) { return; }
+  if (data.event === 'onStateChange' && data.info === 0) {
+    // ENDED — advance immediately if timer hasn't fired yet
+    if (endTimer) {
+      clearTimeout(endTimer);
+      endTimer = null;
+    }
+    const cur = playlist[currentIndex];
+    setCompleted(cur.id, true);
+    updateStats();
+    if (shouldAutoAdvance(cur)) {
+      setTimeout(() => loadIdx(currentIndex + 1, true), 1200);
+    } else {
+      renderPlaylist();
+      renderNowPlaying();
+    }
+  }
+});
+
+// Subscribe to events after iframe loads
+document.getElementById('player').addEventListener('load', () => {
+  setTimeout(() => {
+    const iframe = document.getElementById('player');
+    if (!iframe.contentWindow) return;
+    try {
+      iframe.contentWindow.postMessage('{"event":"listening","id":1,"channel":"avallon"}', '*');
+      iframe.contentWindow.postMessage('{"event":"command","func":"addEventListener","args":["onStateChange"]}', '*');
+    } catch (err) {}
+  }, 500);
+});
+
+function initialLoad() {
+  const idx = getCurrentIdx();
+  currentIndex = Math.max(0, Math.min(idx, playlist.length - 1));
+  loadIdx(currentIndex, false);
+  updateStats();
+}
+
+// =========================================================================
+// CONTROLS
+// =========================================================================
+document.getElementById('markBtn').addEventListener('click', () => {
+  const item = playlist[currentIndex];
+  const completed = getCompleted();
+  setCompleted(item.id, !completed[item.id]);
+  renderPlaylist();
+  renderNowPlaying();
+  updateStats();
+});
+document.getElementById('startBtn').addEventListener('click', () => loadIdx(currentIndex, true));
+document.getElementById('nextBtn').addEventListener('click', () => loadIdx(currentIndex + 1, true));
+document.getElementById('prevBtn').addEventListener('click', () => loadIdx(currentIndex - 1, true));
+document.getElementById('resetLink').addEventListener('click', () => {
+  if (confirm('Wyczyścić cały postęp?')) {
+    localStorage.removeItem(STORAGE);
+    location.reload();
+  }
+});
+
+// Reorder playlist items: update item.idx after rendering
+playlist.forEach((p, i) => p._idx = i);
+
+// Start
+initialLoad();
+</script>
+
+</body>
+</html>
