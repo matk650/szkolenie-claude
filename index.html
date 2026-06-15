@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="robots" content="noindex,nofollow,noarchive">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' https: data:; frame-src https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self'; form-action 'self' https://forms.office.com; base-uri 'none'; object-src 'none'">
 <title>Avallon — szkolenie Claude</title>
 <style>
 :root {
@@ -11,7 +12,7 @@
   --navy-dark: #15375A;
   --gold: #96682c;
   --green: #548235;
-  --orange: #C55A11;
+  --orange: #AD4E0E;
   --red: #C00000;
   --bg: #F9F7F2;
   --grey-light: #F2F2F2;
@@ -97,6 +98,31 @@ header {
   height: 100%;
   border: 0;
 }
+.player-error {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  background: #15375A;
+  color: #fff;
+  z-index: 2;
+}
+.player-error.show { display: flex; }
+.player-error p { font-size: 14px; max-width: 460px; line-height: 1.5; }
+.player-error a {
+  background: #fff;
+  color: var(--navy-dark);
+  padding: 9px 18px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 13px;
+  text-decoration: none;
+}
 .now-playing {
   background: white;
   padding: 22px 26px;
@@ -150,6 +176,10 @@ header {
 }
 .btn {
   padding: 10px 18px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1.5px solid var(--grey);
   border-radius: 6px;
   font-size: 13px;
@@ -160,6 +190,7 @@ header {
   transition: all 0.2s;
 }
 .btn:hover { border-color: var(--navy); color: var(--navy); }
+.btn:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
 .btn:disabled { opacity: 0.45; cursor: default; pointer-events: none; }
 .btn-primary {
   background: var(--green);
@@ -238,6 +269,7 @@ header {
   align-items: flex-start;
 }
 .playlist-item:hover { background: var(--grey-light); }
+.playlist-item:focus-visible { outline: 2px solid var(--green); outline-offset: -2px; }
 .playlist-item.active {
   background: #E8EEF5;
   border-left: 3px solid var(--navy);
@@ -277,7 +309,7 @@ header {
 .item-meta .lang-pl { background: #FFEBCD; color: #8B4513; padding: 1px 6px; border-radius: 3px; }
 .item-meta .lang-en { background: #E0F0FF; color: #1F4E79; padding: 1px 6px; border-radius: 3px; }
 .completion-banner {
-  background: linear-gradient(135deg, var(--green), #6c9c47);
+  background: linear-gradient(135deg, var(--green), #4f7a32);
   color: white;
   padding: 22px 26px;
   border-radius: 10px;
@@ -301,13 +333,16 @@ header {
 }
 .forms-link:hover { transform: translateY(-1px); }
 .reset-link {
-  font-size: 11px;
-  color: rgba(255,255,255,0.75);
+  font-size: 12px;
+  color: #fff;
+  text-decoration: underline;
+  font-weight: 600;
   cursor: pointer;
   margin-top: 8px;
   display: inline-block;
 }
-.reset-link:hover { color: white; text-decoration: underline; }
+.reset-link:hover { text-decoration: underline; opacity: 0.9; }
+.reset-link:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
 /* INTRO MODAL */
 .intro-overlay {
@@ -465,15 +500,15 @@ header {
 </head>
 <body>
 
-<div id="authOverlay">
+<div id="authOverlay" role="dialog" aria-modal="true" aria-labelledby="authTitle">
   <div class="auth-box">
-    <h1>Avallon — szkolenie Claude</h1>
+    <h1 id="authTitle">Avallon — szkolenie Claude</h1>
     <p>Podaj hasło dostępu, aby rozpocząć.</p>
     <form id="authForm">
-      <input type="password" id="authPwd" autocomplete="off" placeholder="Hasło">
+      <input type="password" id="authPwd" autocomplete="off" placeholder="Hasło" aria-label="Hasło dostępu" aria-describedby="authErr">
       <button type="submit">Wejdź</button>
     </form>
-    <div class="auth-err" id="authErr"></div>
+    <div class="auth-err" id="authErr" role="alert"></div>
   </div>
 </div>
 <script>
@@ -488,13 +523,17 @@ header {
     const v = document.getElementById('authPwd').value.trim().toLowerCase();
     if (v === 'avallon2026') {
       localStorage.setItem('avallon_auth', 'ok');
+      document.getElementById('authPwd').removeAttribute('aria-invalid');
       overlay.remove();
-      const startBtn = document.getElementById('introStartBtn');
-      if (document.getElementById('introOverlay').classList.contains('active') && startBtn) {
-        setTimeout(() => startBtn.focus(), 60);
-      }
+      // Modal wprowadzający pokazujemy dopiero teraz — wcześniej był blokowany bramką logowania.
+      try {
+        if (typeof isIntroSeen === 'function' && Array.isArray(playlist) && !isIntroSeen(playlist[currentIndex].id)) {
+          showIntroModal(currentIndex);
+        }
+      } catch (err) {}
     } else {
       document.getElementById('authErr').textContent = 'Nieprawidłowe hasło — spróbuj ponownie.';
+      document.getElementById('authPwd').setAttribute('aria-invalid', 'true');
       document.getElementById('authPwd').value = '';
       document.getElementById('authPwd').focus();
     }
@@ -523,7 +562,11 @@ header {
 
   <div class="player-section">
     <div class="player-wrap">
-      <iframe id="player" src="" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+      <iframe id="player" title="Odtwarzacz wideo szkolenia" src="" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+      <div class="player-error" id="playerError" role="alert">
+        <p>Nie udało się załadować odtwarzacza YouTube. Może być zablokowany przez politykę sieci firmowej lub brak połączenia z internetem. Skontaktuj się z działem IT lub spróbuj w innej sieci.</p>
+        <a id="playerErrorLink" href="#" target="_blank" rel="noopener">Otwórz w YouTube ↗</a>
+      </div>
     </div>
 
     <div class="now-playing" id="nowPlayingBox">
@@ -542,11 +585,11 @@ header {
     </div>
 
     <div class="completion-banner" id="completionBanner">
-      <h2>Ukończyłeś Poziom 1</h2>
-      <p>Obejrzałeś wszystkie odcinki podstawowe. Poziom 2 zawiera materiały rozszerzające — wybierz dowolny temat z listy, aby kontynuować.</p>
+      <h2 id="bannerTitle">Ukończyłeś Poziom 1</h2>
+      <p id="bannerText">Obejrzałeś wszystkie odcinki podstawowe. Poziom 2 zawiera materiały rozszerzające — wybierz dowolny temat z listy, aby kontynuować.</p>
       <a class="forms-link" href="https://forms.office.com/Pages/ResponsePage.aspx?id=VXl2DNUYtkOEkSIgceWjTN8AMLsK0WJFiDrHADuV9XFUQVU1TUpBR0VTSFI4MlJOVzFEUjBWSVBENC4u" target="_blank" rel="noopener">Zgłoś ukończenie w formularzu →</a>
       <br>
-      <span class="reset-link" id="resetLink">Zacznij od nowa</span>
+      <span class="reset-link" id="resetLink" role="button" tabindex="0">Zacznij od nowa</span>
     </div>
   </div>
 
@@ -556,9 +599,9 @@ header {
 
 <!-- INTRO MODAL -->
 <div class="intro-overlay" id="introOverlay">
-  <div class="intro-modal">
+  <div class="intro-modal" role="dialog" aria-modal="true" aria-labelledby="introTitle" aria-describedby="introAbout">
     <div class="intro-modal-header">
-      <div class="step-label" id="introStep">Odcinek 1 z 17</div>
+      <div class="step-label" id="introStep">Wprowadzenie</div>
       <h2 id="introTitle">Tytuł odcinka</h2>
       <div class="modal-author" id="introAuthor">Autor · czas</div>
     </div>
@@ -644,10 +687,10 @@ const playlist = [
     section: 'level1',
     intro: {
       about: 'Oficjalny, trzyminutowy materiał Anthropic pokazujący funkcję Research od włączenia do gotowego raportu.',
-      takeaway: 'Zobaczysz, jak skonstruować dobry prompt badawczy (struktura raportu, preferowane źródła, kontekst), jak włączyć Research, ile trwa analiza (5–45 minut) i jak wygląda wynik: raport z cytowaniami do zweryfikowania. Zrozumiesz, jak Research współpracuje z Extended Thinking i do czego nadaje się najlepiej — analizy rynkowe, research konkurencyjny, synteza wielu źródeł.',
+      takeaway: 'Zobaczysz, jak skonstruować dobry prompt badawczy (struktura raportu, preferowane źródła, kontekst), jak włączyć Research, ile trwa analiza (5–45 minut) i jak wygląda wynik: raport z cytowaniami do zweryfikowania. Zrozumiesz, jak Research współpracuje z Extended Thinking i do czego nadaje się najlepiej — w filmie wymienione są analizy rynkowe, synteza dokumentacji technicznej oraz roadmapping produktu.',
       part: 'Praktyczne dopełnienie mapy funkcji z poprzedniego odcinka. Research to podstawowe narzędzie analityka do screeningu sektorów i targetów. Przykład w filmie jest ogólnobiznesowy — zadanie przenosi go na grunt pracy funduszu.'
     },
-    desc: 'Oficjalny materiał Anthropic o funkcji Research. Pełen przebieg: szczegółowy prompt z oczekiwaną strukturą raportu i preferowanymi źródłami, włączenie funkcji w oknie czatu, praca Claude w tle (wielokrotne, budujące na sobie wyszukiwania) oraz gotowy raport z cytowaniami do weryfikacji. Materiał omawia współpracę z Extended Thinking oraz typowe zastosowania: analizę rynku, research konkurencyjny i syntezę dokumentacji.',
+    desc: 'Oficjalny materiał Anthropic o funkcji Research. Pełen przebieg: szczegółowy prompt z oczekiwaną strukturą raportu i preferowanymi źródłami, włączenie funkcji w oknie czatu, praca Claude w tle (wielokrotne, budujące na sobie wyszukiwania) oraz gotowy raport z cytowaniami do weryfikacji. Materiał omawia współpracę z Extended Thinking oraz typowe zastosowania wskazane w filmie: analizy rynkowe, synteza dokumentacji technicznej i roadmapping produktu.',
     zadanie: 'Uruchom Research dla jednego sektora z Twojego pipeline: poproś o raport o określonej strukturze (wielkość rynku, główni gracze, trendy, ryzyka) i zweryfikuj trzy losowo wybrane cytowania u źródła.'
   },
   {
@@ -669,13 +712,13 @@ const playlist = [
     id: 'A2b', videoId: 'oH03g6zC874',
     title: 'Claude Cowork w praktyce — research, prezentacje i automatyzacje',
     author: 'Jacek Bąk',
-    lang: 'pl', duration: 436,
-    start: 496, end: null,
+    lang: 'pl', duration: 409,
+    start: 499, end: 908,
     section: 'level1',
     intro: {
       about: 'Druga część prezentacji Claude Cowork — research z zapisem do Excela, generowanie prezentacji, Connectors oraz zadania zaplanowane.',
       takeaway: 'Zobaczysz research rynkowy z weryfikacją źródeł i zapisem wyników do Excela, wygenerowanie prezentacji na podstawie pliku z dysku, podłączanie Connectors (np. Gmail, kalendarz Google, Gamma) wraz z zarządzaniem uprawnieniami, analizę zrzutów ekranu zamienioną w raport oraz konfigurację zadania zaplanowanego. Materiał kończy omówienie personalizacji w trzech miejscach: ustawienia ogólne, instrukcje Cowork i plik w folderze roboczym.',
-      part: 'Dokończenie wprowadzenia do Cowork — od pojedynczych zadań do automatyzacji i personalizacji. Wycinek pomija ogłoszenie autora między częściami.'
+      part: 'Dokończenie wprowadzenia do Cowork — od pojedynczych zadań do automatyzacji i personalizacji. Wycinek pomija autopromocję autora między częściami oraz końcowe zaproszenia (subskrypcja, newsletter, szkolenie).'
     },
     desc: 'Druga część prezentacji Claude Cowork. Demonstracje: research 10 największych transakcji na rynku mieszkaniowym z zapisem do Excela i weryfikacją źródła, generowanie prezentacji z gotowego pliku, podłączanie Connectors z kontrolą uprawnień (zawsze pozwalaj / potrzebna zgoda / blokuj), analiza 24 zrzutów ekranu zamieniona w czytelny raport oraz zadanie zaplanowane uruchamiane co poniedziałek. Na końcu personalizacja: preferencje ogólne, globalne instrukcje Cowork i plik instrukcji w folderze roboczym.',
     zadanie: 'Odwzoruj demo researchu na własnym przykładzie: zleć Cowork zebranie 10 ostatnich transakcji M&A w wybranym sektorze z zapisem do Excela i sprawdź podane źródła.'
@@ -886,10 +929,10 @@ const playlist = [
     section: 'level2',
     intro: {
       about: 'Tim Vipond, CEO Corporate Finance Institute, testuje na żywo dodatek Claude for Excel: odbudowę kompletnego modelu trójsprawozdaniowego od zera, bez przygotowanego scenariusza.',
-      takeaway: 'Zobaczysz cały proces: instalację dodatku z Microsoft Marketplace, prompt z zasadami modelowania, budowę prognozy rachunku wyników, harmonogramów (kapitał obrotowy, PP&E, struktura kapitału), domknięcie bilansu i cash flow, poprawki formatowania według standardów CFI, a na końcu porównanie side-by-side z modelem wzorcowym — formuła po formule. Realistycznie pokazane są też granice narzędzia i konieczność weryfikacji.',
+      takeaway: 'Zobaczysz cały proces: instalację dodatku z Microsoft Marketplace, celowo bardzo prosty prompt (Claude sam odczytuje konwencje CFI z szablonu), budowę prognozy rachunku wyników, harmonogramów (kapitał obrotowy, PP&E, struktura kapitału), domknięcie bilansu i cash flow oraz poprawki formatowania według standardów CFI. Po drodze widać realne potknięcia narzędzia (pominięty wiersz, korekty formuł) i jedyną wyraźną słabość — formatowanie (ok. 5 minut ręcznych poprawek). Na końcu wynik jest weryfikowany przez porównanie z modelem wzorcowym (wyrywkowe sprawdzenie formuł i liczb) — zgodny z oryginałem.',
       part: 'Domknięcie Poziomu 2 — materiał najbliższy codzienności funduszu: modelowanie finansowe w Excelu. Przed własnymi testami pamiętaj o zasadach danych: ćwicz wyłącznie na modelach zanonimizowanych.'
     },
-    desc: 'Tim Vipond, CEO Corporate Finance Institute, usuwa z gotowego modelu trójsprawozdaniowego cały forecast wraz z formułami i prosi Claude for Excel o odbudowę według standardów uczonych w kursach CFI. Krok po kroku: instalacja dodatku, prognoza przychodów i kosztów, harmonogramy operacyjne i kapitałowe, domykanie bilansu, rachunek przepływów, formatowanie zgodne z konwencjami (m.in. niebieskie hardcody), wreszcie porównanie z modelem wzorcowym pozycja po pozycji — z wynikiem zgodnym z oryginałem.',
+    desc: 'Tim Vipond, CEO Corporate Finance Institute, usuwa z gotowego modelu trójsprawozdaniowego cały forecast wraz z formułami i prosi Claude for Excel o odbudowę według standardów uczonych w kursach CFI. Krok po kroku: instalacja dodatku, prognoza przychodów i kosztów, harmonogramy operacyjne i kapitałowe, domykanie bilansu, rachunek przepływów, formatowanie zgodne z konwencjami (m.in. niebieskie hardcody), wreszcie wyrywkowe sprawdzenie formuł względem modelu wzorcowego — z wynikiem zgodnym z oryginałem (poza drobnymi różnicami w formatowaniu).',
     zadanie: 'Zainstaluj dodatek Claude for Excel i powtórz test w mniejszej skali: usuń formuły z jednej zakładki zanonimizowanego modelu i zleć ich odbudowę. Porównaj wynik z oryginałem komórka po komórce — każdą rozbieżność wyjaśnij.'
   }
 ];
@@ -901,6 +944,11 @@ const STORAGE = 'avallon_szkolenie_v3';
 let currentIndex = 0;
 let endTimer = null;
 let pendingIndex = null;
+let introTrigger = null;
+let posPoll = null;
+let playerWatchdog = null;
+let playerResponded = false;
+let endHandledForIndex = -1;
 
 function getProgress() {
   try { return JSON.parse(localStorage.getItem(STORAGE) || '{}'); }
@@ -958,8 +1006,10 @@ function renderPlaylist() {
     const dur = `${mins}:${secs.toString().padStart(2, '0')}`;
     const num = isDone ? '✓' : (item.section === 'level1' ? level1Idx : level2Idx);
     const langBadge = `<span class="lang-${item.lang}">${item.lang.toUpperCase()}</span>`;
-    html += `<div class="${cls.join(' ')}" data-idx="${idx}">
-      <div class="item-number">${num}</div>
+    const stateLabel = isActive ? ' — aktualnie odtwarzane' : (isDone ? ' — ukończone' : '');
+    const aria = `${item.title}${stateLabel}, ${item.lang.toUpperCase()}, ${dur}`;
+    html += `<div class="${cls.join(' ')}" data-idx="${idx}" role="button" tabindex="0"${isActive ? ' aria-current="true"' : ''} aria-label="${aria.replace(/"/g, '&quot;')}">
+      <div class="item-number" aria-hidden="true">${num}</div>
       <div class="item-content">
         <div class="item-title">${item.title}</div>
         <div class="item-meta">${langBadge}<span>${dur}</span></div>
@@ -969,7 +1019,11 @@ function renderPlaylist() {
   });
   el.innerHTML = html;
   el.querySelectorAll('.playlist-item').forEach(it => {
-    it.addEventListener('click', () => maybeShowIntro(parseInt(it.dataset.idx)));
+    const go = () => maybeShowIntro(parseInt(it.dataset.idx, 10));
+    it.addEventListener('click', go);
+    it.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); go(); }
+    });
   });
 }
 
@@ -994,9 +1048,11 @@ function renderNowPlaying() {
   markBtn.textContent = completed[item.id] ? '✓ Obejrzane' : 'Oznacz jako obejrzane';
   markBtn.style.color = completed[item.id] ? 'var(--green)' : '';
   markBtn.style.borderColor = completed[item.id] ? 'var(--green)' : '';
+  markBtn.setAttribute('aria-pressed', String(!!completed[item.id]));
   const ytLink = document.getElementById('ytBackupBtn');
   const startParam = item.start ? `&t=${item.start}s` : '';
   ytLink.href = `https://www.youtube.com/watch?v=${item.videoId}${startParam}`;
+  ytLink.title = item.end ? `Otwiera pełny film na YouTube — ten odcinek kończy się ok. ${Math.floor(item.end/60)}:${(item.end%60).toString().padStart(2,'0')}` : 'Otwiera film na YouTube';
   document.getElementById('prevBtn').disabled = currentIndex === 0;
   document.getElementById('nextBtn').disabled = currentIndex === playlist.length - 1;
 }
@@ -1014,7 +1070,19 @@ function updateStats() {
   document.getElementById('progressFill').style.width = `${(done / total) * 100}%`;
   const level1Items = playlist.filter(p => p.section === 'level1');
   const level1Done = level1Items.every(p => completed[p.id]);
-  document.getElementById('completionBanner').style.display = level1Done ? 'block' : 'none';
+  const allDone = playlist.every(p => completed[p.id]);
+  const banner = document.getElementById('completionBanner');
+  if (allDone) {
+    document.getElementById('bannerTitle').textContent = 'Ukończyłeś całe szkolenie';
+    document.getElementById('bannerText').textContent = 'Przeszedłeś wszystkie 20 odcinków — Poziom 1 i Poziom 2. Zgłoś ukończenie w formularzu poniżej.';
+    banner.style.display = 'block';
+  } else if (level1Done) {
+    document.getElementById('bannerTitle').textContent = 'Ukończyłeś Poziom 1';
+    document.getElementById('bannerText').textContent = 'Obejrzałeś wszystkie odcinki podstawowe. Poziom 2 zawiera materiały rozszerzające — wybierz dowolny temat z listy, aby kontynuować.';
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
 }
 
 // =========================================================================
@@ -1029,6 +1097,13 @@ function maybeShowIntro(idx) {
 
 function showIntroModal(idx) {
   if (idx < 0 || idx >= playlist.length) return;
+  // zatrzymaj bieżący odcinek i unieważnij jego zaplanowane auto-przejście,
+  // żeby film nie grał za modalem i nie wystrzelił przeskok w tle
+  if (endTimer) { clearTimeout(endTimer); endTimer = null; }
+  if (posPoll) { clearInterval(posPoll); posPoll = null; }
+  endHandledForIndex = currentIndex;
+  try { document.getElementById('player').contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":"","id":1,"channel":"widget"}', '*'); } catch (err) {}
+  if (!document.getElementById('introOverlay').classList.contains('active')) introTrigger = document.activeElement;
   pendingIndex = idx;
   const item = playlist[idx];
   const mins = Math.floor(item.duration / 60);
@@ -1053,11 +1128,16 @@ function showIntroModal(idx) {
   document.getElementById('introMeta').textContent = `Czas trwania: ${dur}`;
   document.getElementById('introLangHint').style.display = item.lang === 'en' ? 'block' : 'none';
   document.getElementById('introOverlay').classList.add('active');
-  setTimeout(() => document.getElementById('introStartBtn').focus(), 60);
+  document.body.style.overflow = 'hidden';
+  if (!document.getElementById('authOverlay')) setTimeout(() => document.getElementById('introStartBtn').focus(), 60);
 }
 
 function closeIntroModal() {
   document.getElementById('introOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+  pendingIndex = null;
+  if (introTrigger && typeof introTrigger.focus === 'function') { try { introTrigger.focus(); } catch (e) {} }
+  introTrigger = null;
 }
 
 function confirmIntroAndPlay() {
@@ -1065,8 +1145,11 @@ function confirmIntroAndPlay() {
   const idx = pendingIndex;
   pendingIndex = null;
   setIntroSeen(playlist[idx].id);
-  closeIntroModal();
+  document.getElementById('introOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+  introTrigger = null;
   loadIdx(idx, true);
+  setTimeout(() => { try { document.getElementById('playBtn').focus(); } catch (e) {} }, 50);
 }
 
 // =========================================================================
@@ -1083,12 +1166,11 @@ function buildSrc(item, autoplay) {
   return `https://www.youtube.com/embed/${item.videoId}?${params.join('&')}`;
 }
 
-let segmentEndHandled = false;
-
 function handleSegmentEnd(modalDelayMs) {
-  if (segmentEndHandled) return;
-  segmentEndHandled = true;
+  if (endHandledForIndex === currentIndex) return;
+  endHandledForIndex = currentIndex;
   if (endTimer) { clearTimeout(endTimer); endTimer = null; }
+  if (posPoll) { clearInterval(posPoll); posPoll = null; }
   const cur = playlist[currentIndex];
   setCompleted(cur.id, true);
   const isLastLevel1 = currentIndex === playlist.findLastIndex(p => p.section === 'level1');
@@ -1101,7 +1183,10 @@ function handleSegmentEnd(modalDelayMs) {
   const shouldAdvance = (cur.section === 'level1' && !isLastLevel1 && nextIsSameSection) ||
                        (cur.section === 'level2' && !isLastLevel2 && nextIsSameSection);
   if (shouldAdvance) {
-    setTimeout(() => maybeShowIntro(currentIndex + 1), modalDelayMs || 0);
+    const fromIdx = currentIndex;
+    const targetIdx = currentIndex + 1;
+    // zamrożony cel + strażnik: jeśli użytkownik nawigował w międzyczasie, nie przeskakuj
+    setTimeout(() => { if (currentIndex === fromIdx) maybeShowIntro(targetIdx); }, modalDelayMs || 0);
   }
 }
 
@@ -1109,16 +1194,33 @@ function loadIdx(idx, autoplay) {
   if (idx < 0 || idx >= playlist.length) return;
   currentIndex = idx;
   setCurrentIdx(idx);
-  segmentEndHandled = false;
+  endHandledForIndex = -1;
+  playerResponded = false;
   const item = playlist[idx];
   const iframe = document.getElementById('player');
+  hidePlayerError();
+  iframe.title = 'Odtwarzacz wideo: ' + item.title;
   iframe.src = buildSrc(item, !!autoplay);
 
-  if (endTimer) clearTimeout(endTimer);
+  if (endTimer) { clearTimeout(endTimer); endTimer = null; }
+  if (posPoll) { clearInterval(posPoll); posPoll = null; }
+  if (playerWatchdog) { clearTimeout(playerWatchdog); playerWatchdog = null; }
+
+  // Wykrycie braku odtwarzacza (np. YouTube zablokowany w sieci firmowej / brak internetu):
+  // jeśli przez 8 s nie przyjdzie żadna wiadomość od playera, pokaż komunikat.
+  playerWatchdog = setTimeout(() => { if (!playerResponded) showPlayerError(); }, 8000);
+
   if (autoplay) {
-    // Koniec segmentu wykrywa nasłuch zdarzenia "ended" z playera YouTube (poniżej).
-    // Timer jest tylko awaryjnym fallbackiem z dużym zapasem na reklamy i pauzy.
-    endTimer = setTimeout(() => handleSegmentEnd(0), Math.round(item.duration * 1.5) * 1000);
+    // Koniec segmentu wykrywa: dla pełnych filmów (end:null) zdarzenie 'ended',
+    // dla klipów z 'end' — pozycja odtwarzania >= end (listener 'message' poniżej, odporne na reklamy).
+    // setTimeout to wyłącznie awaryjny fallback z dużym zapasem, gdyby API playera nie odpowiadało.
+    const fbSecs = Math.round(item.duration * 1.5);
+    endTimer = setTimeout(() => handleSegmentEnd(0), fbSecs * 1000);
+    if (item.end) {
+      posPoll = setInterval(() => {
+        try { iframe.contentWindow.postMessage('{"event":"command","func":"getCurrentTime","args":[],"id":1,"channel":"widget"}', '*'); } catch (e) {}
+      }, 1000);
+    }
   }
 
   renderPlaylist();
@@ -1126,12 +1228,36 @@ function loadIdx(idx, autoplay) {
   if (!autoplay) window.scrollTo({top: 0, behavior: 'smooth'});
 }
 
+function showPlayerError() {
+  const el = document.getElementById('playerError');
+  if (!el) return;
+  const item = playlist[currentIndex];
+  const startParam = item && item.start ? `&t=${item.start}s` : '';
+  document.getElementById('playerErrorLink').href = item ? `https://www.youtube.com/watch?v=${item.videoId}${startParam}` : '#';
+  el.classList.add('show');
+}
+function hidePlayerError() {
+  const el = document.getElementById('playerError');
+  if (el) el.classList.remove('show');
+}
+
 window.addEventListener('message', (e) => {
+  if (e.origin && e.origin.indexOf('youtube') === -1) return;
   if (!e.data || typeof e.data !== 'string') return;
   let data;
   try { data = JSON.parse(e.data); } catch (err) { return; }
+  // odtwarzacz odpowiada — anuluj watchdog "zablokowanego YouTube"
+  playerResponded = true;
+  if (playerWatchdog) { clearTimeout(playerWatchdog); playerWatchdog = null; }
+  hidePlayerError();
+  const item = playlist[currentIndex];
+  const info = data.info;
+  const ct = info && typeof info.currentTime === 'number' ? info.currentTime : null;
+  // klip z parametrem 'end' — koniec gdy pozycja odtwarzania osiągnie 'end' (niezależnie od reklam)
+  if (item && item.end && ct !== null && ct >= item.end - 0.5) { handleSegmentEnd(800); return; }
+  // pełny film (end:null) — stan ENDED
   const ended = (data.event === 'onStateChange' && data.info === 0) ||
-    (data.event === 'infoDelivery' && data.info && data.info.playerState === 0);
+    (data.event === 'infoDelivery' && info && info.playerState === 0);
   if (ended) handleSegmentEnd(800);
 });
 
@@ -1170,18 +1296,28 @@ document.getElementById('prevBtn').addEventListener('click', () => {
   if (currentIndex > 0) maybeShowIntro(currentIndex - 1);
 });
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeIntroModal();
+  if (e.key === 'Escape' && document.getElementById('introOverlay').classList.contains('active')) closeIntroModal();
 });
-document.getElementById('resetLink').addEventListener('click', () => {
+function doReset() {
   if (confirm('Wyczyścić cały postęp oglądania?')) {
     localStorage.removeItem(STORAGE);
     location.reload();
   }
+}
+document.getElementById('resetLink').addEventListener('click', doReset);
+document.getElementById('resetLink').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); doReset(); }
 });
 document.getElementById('introStartBtn').addEventListener('click', confirmIntroAndPlay);
 document.getElementById('introOverlay').addEventListener('click', (e) => {
   if (e.target.id === 'introOverlay') closeIntroModal();
 });
+// focus trap: modal ma jeden element interaktywny (Włącz odcinek) — Tab nie opuszcza go do tła
+document.getElementById('introOverlay').addEventListener('keydown', (e) => {
+  if (e.key === 'Tab') { e.preventDefault(); document.getElementById('introStartBtn').focus(); }
+});
+// utrata połączenia w trakcie odtwarzania — pokaż komunikat o odtwarzaczu
+window.addEventListener('offline', () => { if (document.getElementById('player').src) showPlayerError(); });
 
 // =========================================================================
 // INIT
@@ -1192,9 +1328,9 @@ function initialLoad() {
   renderPlaylist();
   renderNowPlaying();
   updateStats();
-  // Modal wprowadzający tylko, jeśli bieżący odcinek nie był jeszcze uruchamiany;
-  // w przeciwnym razie użytkownik startuje przyciskiem "Włącz odcinek".
-  if (!isIntroSeen(playlist[currentIndex].id)) {
+  // Modal wprowadzający pokazujemy tylko, gdy: (a) użytkownik jest już zalogowany (brak bramki),
+  // oraz (b) bieżący odcinek nie był jeszcze uruchamiany. Po świeżym logowaniu modal odpala skrypt auth.
+  if (!document.getElementById('authOverlay') && !isIntroSeen(playlist[currentIndex].id)) {
     setTimeout(() => showIntroModal(currentIndex), 600);
   }
 }
