@@ -311,11 +311,10 @@ header {
 .completion-banner {
   background: linear-gradient(135deg, var(--green), #4f7a32);
   color: white;
-  padding: 22px 26px;
-  border-radius: 10px;
-  margin-top: 16px;
+  padding: 18px 32px;
   text-align: center;
   display: none;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.18);
 }
 .completion-banner h2 { font-size: 22px; margin-bottom: 6px; }
 .completion-banner p { font-size: 14px; opacity: 0.95; }
@@ -332,6 +331,26 @@ header {
   transition: transform 0.15s;
 }
 .forms-link:hover { transform: translateY(-1px); }
+.banner-form-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.banner-name-input {
+  padding: 10px 14px;
+  min-height: 44px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 260px;
+  max-width: 80vw;
+}
+.banner-form-row .forms-link { margin-top: 0; }
+.banner-name-input::placeholder { color: #595959; opacity: 1; }
+.name-err { color: #FFD2D2; font-size: 13px; min-height: 16px; margin-top: 6px; }
 .reset-link {
   font-size: 12px;
   color: #fff;
@@ -441,9 +460,46 @@ header {
 }
 .intro-start-btn:hover { background: #6c9c47; }
 
+/* ===== ZAKŁADKI + TODO ===== */
+.tabbar { max-width: 1400px; margin: 0 auto; padding: 14px 24px 0; display: flex; gap: 8px; }
+.tabbtn {
+  padding: 10px 20px; min-height: 44px; border: none; border-radius: 8px 8px 0 0;
+  background: transparent; color: var(--navy); font-size: 15px; font-weight: 600; cursor: pointer;
+}
+.tabbtn.active { background: white; box-shadow: 0 -2px 8px rgba(0,0,0,0.06); }
+.tabbtn:hover { background: rgba(255,255,255,0.6); }
+.tabbtn:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+.tab-reset {
+  margin-left: auto; align-self: center; font-size: 13px; color: var(--grey-dark);
+  text-decoration: underline; cursor: pointer; padding: 8px 6px;
+}
+.tab-reset:hover { color: var(--navy); }
+.tab-reset:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+.todo-panel { max-width: 900px; margin: 0 auto; padding: 24px; }
+.todo-panel h2 { font-size: 22px; color: var(--navy-dark); margin-bottom: 6px; }
+.todo-intro { font-size: 14px; color: var(--grey-dark); margin-bottom: 20px; line-height: 1.5; }
+.todo-list { list-style: none; }
+.todo-item {
+  display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; background: white;
+  border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.todo-item input[type="checkbox"] { width: 22px; height: 22px; margin-top: 1px; flex-shrink: 0; cursor: pointer; accent-color: var(--green); }
+.todo-item .todo-text { flex: 1; font-size: 14px; color: #222; line-height: 1.45; cursor: pointer; }
+.todo-item.done .todo-text { text-decoration: line-through; color: var(--grey-dark); }
+.todo-item .auto-badge { font-size: 11px; color: var(--grey-dark); font-style: italic; }
+.todo-open {
+  white-space: nowrap; font-size: 13px; font-weight: 600; color: var(--green); text-decoration: none;
+  padding: 7px 12px; border: 1.5px solid var(--green); border-radius: 6px; flex-shrink: 0;
+  min-height: 44px; display: inline-flex; align-items: center;
+}
+.todo-open:hover { background: var(--green); color: white; }
+.todo-open:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
 @media (max-width: 700px) {
   header, .layout { padding-left: 16px; padding-right: 16px; }
   .btn-row .btn { flex-grow: 1; }
+  .tabbar { padding-left: 16px; padding-right: 16px; }
+  .todo-item { flex-wrap: wrap; }
+  .todo-open { margin-left: 34px; }
 }
 
 /* ===== AUTH OVERLAY ===== */
@@ -484,6 +540,8 @@ header {
   cursor: pointer;
 }
 .auth-box button:hover { background: #6c9c47; }
+.auth-box input:focus-visible, .auth-box button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.auth-box input::placeholder { color: #595959; opacity: 1; }
 .auth-err { color: #FFD2D2; font-size: 13px; margin-top: 12px; min-height: 18px; }
 
 /* ===== EN HINT IN MODAL ===== */
@@ -518,12 +576,37 @@ header {
     overlay.remove();
     return;
   }
+  // Focus trap bramki: dopóki overlay istnieje, fokus nie ucieka na tło (działa niezależnie
+  // od tego, że reszta strony jest parsowana po tym skrypcie — sprawdzamy żywy fokus).
+  function authFocusables() {
+    const o = document.getElementById('authOverlay');
+    return o ? [o.querySelector('#authPwd'), o.querySelector('button[type="submit"]')].filter(Boolean) : [];
+  }
+  function authTrapKey(e) {
+    if (e.key !== 'Tab') return;
+    const f = authFocusables(); if (!f.length) return;
+    e.preventDefault();
+    const i = f.indexOf(document.activeElement);
+    const n = e.shiftKey ? (i <= 0 ? f.length - 1 : i - 1) : (i >= f.length - 1 ? 0 : i + 1);
+    f[n].focus();
+  }
+  function authTrapFocus(e) {
+    const o = document.getElementById('authOverlay'); if (!o) return;
+    if (!o.contains(e.target)) { const pwd = o.querySelector('#authPwd'); if (pwd) pwd.focus(); }
+  }
+  function removeAuthTrap() {
+    document.removeEventListener('keydown', authTrapKey, true);
+    document.removeEventListener('focusin', authTrapFocus, true);
+  }
+  document.addEventListener('keydown', authTrapKey, true);
+  document.addEventListener('focusin', authTrapFocus, true);
   document.getElementById('authForm').addEventListener('submit', (e) => {
     e.preventDefault();
     const v = document.getElementById('authPwd').value.trim().toLowerCase();
     if (v === 'avallon2026') {
       localStorage.setItem('avallon_auth', 'ok');
       document.getElementById('authPwd').removeAttribute('aria-invalid');
+      removeAuthTrap();
       overlay.remove();
       // Modal wprowadzający pokazujemy dopiero teraz — wcześniej był blokowany bramką logowania.
       try {
@@ -542,6 +625,17 @@ header {
 })();
 </script>
 
+<div class="completion-banner" id="completionBanner">
+  <h2 id="bannerTitle">Ukończyłeś całe szkolenie</h2>
+  <p id="bannerText">Przeszedłeś wszystkie odcinki. Wpisz imię i nazwisko i wyślij potwierdzenie — liczba odcinków i czas uzupełnią się same.</p>
+  <div class="banner-form-row">
+    <input type="text" id="userName" class="banner-name-input" placeholder="Imię i nazwisko" aria-label="Imię i nazwisko" autocomplete="name" aria-required="true" aria-describedby="nameErr">
+    <a class="forms-link" id="formsLink" href="#" target="_blank" rel="noopener">Zgłoś ukończenie →</a>
+  </div>
+  <div class="name-err" id="nameErr" role="alert"></div>
+  <span class="reset-link js-reset" id="resetLink" role="button" tabindex="0">Zacznij od nowa</span>
+</div>
+
 <header>
   <div class="header-top">
     <div class="header-title">
@@ -549,14 +643,20 @@ header {
       <p>Przed pierwszym uruchomieniem odcinka zobaczysz krótkie wprowadzenie. Jeśli film wystartuje wyciszony, kliknij ikonę głośnika w playerze.</p>
     </div>
     <div class="header-stats">
-      <strong id="statCount">0/16</strong>
-      <span id="statTime">0 z ~134 min</span>
+      <strong id="statCount">0/13</strong>
+      <span id="statTime">0 z ~100 min</span>
     </div>
   </div>
   <div class="progress-bar">
     <div class="progress-bar-fill" id="progressFill" style="width: 0%"></div>
   </div>
 </header>
+
+<div class="tabbar" role="group" aria-label="Sekcje">
+  <button class="tabbtn active" id="tabSzkolenie" aria-pressed="true">▶ Szkolenie</button>
+  <button class="tabbtn" id="tabTodo" aria-pressed="false">✓ Lista zadań</button>
+  <a class="tab-reset js-reset" id="headerReset" role="button" tabindex="0" href="#">Wyczyść postęp</a>
+</div>
 
 <div class="layout">
 
@@ -583,18 +683,16 @@ header {
         <a class="btn" id="ytBackupBtn" href="#" target="_blank" rel="noopener" style="text-decoration:none;">Otwórz w YouTube ↗</a>
       </div>
     </div>
-
-    <div class="completion-banner" id="completionBanner">
-      <h2 id="bannerTitle">Ukończyłeś Poziom 1</h2>
-      <p id="bannerText">Obejrzałeś wszystkie odcinki podstawowe. Poziom 2 zawiera materiały rozszerzające — wybierz dowolny temat z listy, aby kontynuować.</p>
-      <a class="forms-link" href="https://forms.office.com/Pages/ResponsePage.aspx?id=VXl2DNUYtkOEkSIgceWjTN8AMLsK0WJFiDrHADuV9XFUQVU1TUpBR0VTSFI4MlJOVzFEUjBWSVBENC4u" target="_blank" rel="noopener">Zgłoś ukończenie w formularzu →</a>
-      <br>
-      <span class="reset-link" id="resetLink" role="button" tabindex="0">Zacznij od nowa</span>
-    </div>
   </div>
 
   <div class="playlist" id="playlistEl"></div>
 
+</div>
+
+<div class="todo-panel" id="todoPanel" style="display:none;">
+  <h2>Lista zadań — przygotowanie do pracy z Claude</h2>
+  <p class="todo-intro">Odhacz kolejne kroki konfiguracji. Pierwsze zadanie zaznaczy się samo po obejrzeniu wszystkich odcinków. Postęp zapisuje się w tej przeglądarce.</p>
+  <ul class="todo-list" id="todoList"></ul>
 </div>
 
 <!-- INTRO MODAL -->
@@ -679,6 +777,21 @@ const playlist = [
     zadanie: 'Stwórz pierwszy własny Project w Claude. Wgraj dwa dokumenty (na przykład notatka i raport rynkowy) i zadaj pytanie wymagające skorzystania z obu źródeł.'
   },
   {
+    id: 'PRJ', videoId: 'GJ5jTgcbRHA',
+    title: 'Projects — własne środowiska pracy z bazą wiedzy',
+    author: 'Anthropic',
+    lang: 'en', duration: 428,
+    start: 0, end: null,
+    section: 'level1',
+    intro: {
+      about: 'Oficjalny materiał Anthropic wprowadzający Projects — samodzielne środowiska w Claude z własną historią czatów, bazą wiedzy i ustawieniami.',
+      takeaway: 'Zrozumiesz, czym są Projects i do czego służą: jak wgrać dokumenty do bazy wiedzy projektu (uwzględnianej automatycznie przy każdej rozmowie), jak Projects radzą sobie z dużą ilością treści dzięki mechanizmowi RAG, jak zdefiniować instrukcje projektu sterujące stylem odpowiedzi oraz jak utworzyć projekt krok po kroku. Poznasz też funkcje zaawansowane.',
+      part: 'Fundament pracy z Claude — Projects to naturalna jednostka pracy w funduszu (projekt = deal, spółka portfelowa lub obszar tematyczny). Materiał uzupełnia mapę funkcji z poprzedniego odcinka.'
+    },
+    desc: 'Oficjalny przewodnik Anthropic po Projects. Materiał wyjaśnia, czym są samodzielne środowiska projektowe z własną historią, bazą wiedzy i ustawieniami; jak project knowledge wzbogaca odpowiedzi (wgrane dokumenty uwzględniane przy każdym promptcie), jak działa automatyczne RAG przy dużej ilości materiałów, jak ustawić instrukcje projektu sterujące tonem i formatem oraz jak utworzyć projekt i korzystać z funkcji zaawansowanych.',
+    zadanie: 'Utwórz Projekt dla jednej spółki lub transakcji, wgraj 3–5 dokumentów do bazy wiedzy i ustaw instrukcje projektu (rola, ton, format). Zadaj pytanie wymagające skorzystania z kilku dokumentów naraz.'
+  },
+  {
     id: 'A4', videoId: 'R-KJgjIrh24',
     title: 'Research w praktyce — od promptu do raportu z cytowaniami',
     author: 'Anthropic',
@@ -709,6 +822,21 @@ const playlist = [
     zadanie: 'Zainstaluj Claude Desktop ze strony claude.com/download, wskaż folder z plikami niewrażliwymi i zleć uporządkowanie według wybranego kryterium. Dla wprawy spróbuj też researchu rynkowego z zapisem wyników do Excela.'
   },
   {
+    id: 'CHR', videoId: 'IypXvHej9eY',
+    title: 'Claude for Chrome — AI tam, gdzie już pracujesz',
+    author: 'Anthropic',
+    lang: 'en', duration: 79,
+    start: 0, end: null,
+    section: 'level1',
+    intro: {
+      about: 'Krótkie, oficjalne wideo Anthropic prezentujące Claude for Chrome — działanie modelu bezpośrednio w przeglądarce (computer use) na realnym przykładzie.',
+      takeaway: 'Zobaczysz, jak Claude w przeglądarce zbiera kontekst z wielu źródeł (maile, dokumenty), aktualizuje arkusz w czasie rzeczywistym i przygotowuje wersję roboczą maila — z Tobą zachowującym kontrolę nad finalną akcją. Materiał podkreśla bezpieczeństwo: granularne uprawnienia, ochronę przed prompt injection, ograniczenia witryn oraz pytanie o zgodę przed wrażliwymi działaniami (np. zakupami).',
+      part: 'Wprowadzenie do Claude for Chrome — rozszerzenia łączącego Claude z przeglądarką. Krótki materiał koncepcyjny; instalacja rozszerzenia opisana jest w zadaniu.'
+    },
+    desc: 'Oficjalne, około osiemdziesięciosekundowe wideo Anthropic o Claude for Chrome (oparty na modelu Sonnet 4.5, computer use w przeglądarce). Na przykładzie planowania budżetu remontu pokazuje, jak Claude zbiera dane z maili i dokumentów, aktualizuje arkusz w czasie rzeczywistym i przygotowuje mail do wysłania — przy czym użytkownik zachowuje kontrolę nad finalną akcją. Druga część dotyczy bezpieczeństwa: granularne uprawnienia, ochrona przed prompt injection, ograniczenia witryn oraz pytanie o zgodę przed wrażliwymi działaniami.',
+    zadanie: 'Zainstaluj rozszerzenie Claude w Chrome (Chrome Web Store) i przetestuj je na jednym prostym, bezpiecznym zadaniu na stronie niewrażliwej — zwróć uwagę, o jakie uprawnienia prosi przed wykonaniem akcji.'
+  },
+  {
     id: 'B1', videoId: 'jCr8LHafFdU',
     title: 'Pięć praktycznych zastosowań Claude Skills',
     author: 'Jacek Bąk',
@@ -722,6 +850,36 @@ const playlist = [
     },
     desc: 'Praktyczne studium pięciu zastosowań Skills. Materiał prezentuje budowę generatora raportów z identyfikacją wizualną, narzędzia do analizy sprawozdań finansowych według ustalonych kryteriów, instrumentu compliance interpretującego akty prawne pod kątem działalności firmy, oraz sposób oddzielenia wiedzy projektowej od procedury operacyjnej. Trener traktuje Skills jako system kompetencji rozszerzających możliwości pracy z dokumentami i danymi.',
     zadanie: 'Zaprojektuj jeden własny Skill rozwiązujący powtarzalne zadanie z Twojej codziennej pracy.'
+  },
+  {
+    id: 'PLG', videoId: '1GZYNyuL6Lg',
+    title: 'Pluginy w Claude — jak budować „pracowników AI”',
+    author: 'Eliot Prince',
+    lang: 'en', duration: 895,
+    start: 0, end: null,
+    section: 'level1',
+    intro: {
+      about: 'Anglojęzyczny przewodnik po pluginach w Claude Cowork — jak Skills i pluginy współpracują oraz jak „wytrenować” Cowork do całych ról zawodowych.',
+      takeaway: 'Zrozumiesz różnicę między Skills a pluginami, jak pluginy łączą Skills, komendy, agentów i konektory w gotowe pakiety ról (np. wsparcie klienta, marketing, sprzedaż, product management), jak je instalować oraz jak zbudować własny plugin od zera. To pomost między pojedynczymi Skillami a kompletnymi, powtarzalnymi rolami.',
+      part: 'Rozszerzenie tematu Skills — pluginy jako spakowane zestawy kompetencji. Naturalna kontynuacja poprzedniego odcinka; przyda się też przy zadaniu instalacji gotowego pluginu Private Equity.'
+    },
+    desc: 'Eliot Prince tłumaczy, czym są pluginy w Claude Cowork i jak współgrają ze Skills. Pokazuje, że pluginy pakują Skills, komendy, agentów i konektory w gotowe role (np. wsparcie klienta, marketing, sprzedaż, product management) z dostępem do narzędzi i wiedzy branżowej, omawia różnice względem pojedynczych Skills, sposób instalacji oraz budowę własnego pluginu od podstaw. Część przykładów pokazuje zaawansowane automatyzacje — traktuj je jako inspirację.',
+    zadanie: 'Wejdź na claude.com/plugins, przejrzyj katalog i zainstaluj do Cowork jeden plugin pasujący do Twojej pracy (np. Private Equity). Uruchom go na prostym, przykładowym zadaniu.'
+  },
+  {
+    id: 'EXL', videoId: '9OsKjq_rVXc',
+    title: 'Claude for Excel — czyszczenie danych, formuły i analiza',
+    author: 'Kevin Stratvert',
+    lang: 'en', duration: 562,
+    start: 0, end: null,
+    section: 'level1',
+    intro: {
+      about: 'Przejrzysty, anglojęzyczny tutorial pokazujący dodatek Claude for Excel w działaniu — od instalacji po czyszczenie danych, naprawę formuł i analizę.',
+      takeaway: 'Zobaczysz pełen proces: instalację dodatku Claude w Excelu (zakładka Dodatki → wyszukaj „Claude”), otwarcie panelu bocznego (skrót Ctrl+Alt+C), czyszczenie bałaganu w danych, automatyczną naprawę błędnych formuł, generowanie podsumowań i wykresów oraz wyszukiwanie wniosków w danych. Uwaga: dodatek wymaga planu płatnego.',
+      part: 'Praktyczne narzędzie do codziennej pracy z arkuszami i modelami finansowymi — czytelny, dobrze nagrany materiał o Claude for Excel.'
+    },
+    desc: 'Kevin Stratvert pokazuje krok po kroku dodatek Claude for Excel na celowo „zabałaganionym” arkuszu: instalację z poziomu zakładki Dodatki (wyszukaj „Claude”), otwarcie panelu Claude (skrót Ctrl+Alt+C lub ikona na wstążce), czyszczenie niespójnych danych, automatyczną naprawę zepsutych formuł, generowanie podsumowań i wykresów oraz wyciąganie wniosków z danych i przegląd funkcji zaawansowanych. Materiał zaznacza, że Claude for Excel wymaga planu płatnego (nie działa w wersji darmowej).',
+    zadanie: 'Zainstaluj dodatek Claude for Excel i na zanonimizowanym arkuszu zleć dwie rzeczy: wyczyszczenie niespójnych danych oraz naprawę jednej zepsutej formuły. Sprawdź wynik formuła po formule.'
   },
   {
     id: 'D10', videoId: 'AY3lif2E4zI',
@@ -754,14 +912,13 @@ const playlist = [
     zadanie: 'Stwórz projekt NDA reviewer z własnym zestawem standardowych warunków. Wgraj jedną przykładową umowę i porównaj wynik z manualnym przeglądem.'
   },
 
-  // ===================== POZIOM 2 — Rozszerzenie =====================
   {
     id: 'D9', videoId: '_d0duu3dED4',
     title: 'Model Context Protocol — wprowadzenie techniczne',
     author: 'ByteByteGo',
     lang: 'en', duration: 303,
     start: 0, end: null,
-    section: 'level2',
+    section: 'level1',
     intro: {
       about: 'Pięciominutowe wprowadzenie techniczne do Model Context Protocol — otwartego standardu komunikacji między modelami AI a zewnętrznymi systemami.',
       takeaway: 'Zrozumiesz, czym jest MCP jako open standard wprowadzony przez Anthropic, jak działa architektura host-client-server, jakie są pięć podstawowych prymitywów protokołu (prompts, resources, tools, roots, sampling), oraz na czym polega problem N×N integracji, który MCP rozwiązuje. Materiał kończy się praktycznym przykładem integracji z bazą danych Postgres.',
@@ -770,111 +927,6 @@ const playlist = [
     desc: 'Pięciominutowe wprowadzenie techniczne do Model Context Protocol, otwartego standardu wprowadzonego przez Anthropic. Materiał wyjaśnia, w jaki sposób MCP rozwiązuje problem fragmentarycznych integracji między modelami AI a źródłami danych, prezentuje architekturę host-client-server oraz pięć podstawowych prymitywów: prompts i resources jako mechanizmy kontekstowe, tools jako wywoływalne funkcje, roots dla bezpiecznego dostępu do plików oraz sampling jako mechanizm dwukierunkowej komunikacji. Końcowa część przedstawia praktyczny przykład integracji z bazą Postgres oraz mapę istniejącego ekosystemu obejmującą Google Drive, Slack i GitHub.',
     zadanie: 'Sprawdź katalog dostępnych MCP w panelu Claude i zidentyfikuj jedną integrację, która mogłaby być przydatna w Twojej pracy.'
   },
-  {
-    id: 'C1a', videoId: 'X3uum6W2xEI',
-    title: 'Dlaczego Skills mają znaczenie',
-    author: 'Ben AI',
-    lang: 'en', duration: 98,
-    start: 35, end: 133,
-    section: 'level2',
-    intro: {
-      about: 'Krótkie strategiczne uzasadnienie roli Skills w pracy z modelami AI — dlaczego mechanizm ten zmienia sposób korzystania z narzędzi.',
-      takeaway: 'Otrzymasz uzasadnienie, dlaczego Skills stanowią zmianę paradygmatu względem zwykłych promptów i projektów. Trener wyjaśnia, jak Skills wprowadzają konsystencję działania w organizacji, umożliwiają samodoskonalenie procesów oraz pozwalają zachować kontekst pracy między sesjami.',
-      part: 'Wprowadzenie do bloku rozszerzonego o Skills. Krótki materiał ustawiający perspektywę dla kolejnego, bardziej technicznego odcinka.'
-    },
-    desc: 'Krótkie strategiczne uzasadnienie roli Skills w ekosystemie narzędzi AI. Trener tłumaczy, dlaczego zwykłe prompty i pojedyncze projekty nie skalują się w środowisku organizacyjnym, oraz w jaki sposób Skills wprowadzają konsystencję procesów, mechanizmy samodoskonalenia i zachowanie kontekstu między sesjami.',
-    zadanie: ''
-  },
-  {
-    id: 'C1b', videoId: 'X3uum6W2xEI',
-    title: 'Skills — anatomia, architektura i framework projektowania',
-    author: 'Ben AI',
-    lang: 'en', duration: 765,
-    start: 133, end: 898,
-    section: 'level2',
-    intro: {
-      about: 'Pogłębiony materiał o budowie i mechanice działania Skills oraz framework do projektowania własnych instrukcji o wysokiej jakości.',
-      takeaway: 'Poznasz anatomię Skilla: plik skill.md jako instrukcję procesu oraz pliki referencyjne (teksty, instrukcje narzędzi, multimedia, a nawet skrypty kodu). Zrozumiesz, jak Skills funkcjonują technicznie — progressive disclosure, czyli sposób, w jaki Claude wybiera odpowiedni Skill spośród tysięcy dostępnych, oraz czym Skills różnią się od Plugins. Ostatnia część prezentuje framework projektowania Skills wysokiej jakości obejmujący planowanie, inżynierię kontekstu oraz iteracyjną poprawę.',
-      part: 'Część rozszerzona — materiał techniczny adresowany do osób, które chcą budować własne firmowe biblioteki Skills.'
-    },
-    desc: 'Pogłębiony materiał techniczny o Skills. Trener pokazuje anatomię Skilla (skill.md plus pliki referencyjne: teksty, instrukcje narzędzi, multimedia, skrypty), wyjaśnia mechanizm progressive disclosure pozwalający jednemu agentowi korzystać z tysięcy Skills, omawia różnicę względem Plugins oraz trzy warstwy ekosystemu (ogólne od Anthropic, marketplace, własne firmowe). Końcowa część prezentuje framework projektowania Skills obejmujący planowanie wyników, inżynierię kontekstu, projektowanie punktów akceptacji człowieka oraz iteracyjne dopracowywanie instrukcji.',
-    zadanie: 'Zaprojektuj jeden własny Skill według prezentowanego frameworka i przetestuj go na rzeczywistym zadaniu ze swojej pracy.'
-  },
-  {
-    id: 'C2', videoId: 'rlIy7b-3DC8',
-    title: 'Cowork w pracy projektowej z perspektywy zespołu Anthropic',
-    author: 'Jenny Wen, Anthropic',
-    lang: 'en', duration: 1087,
-    start: 298, end: 1385,
-    section: 'level2',
-    intro: {
-      about: 'Rozmowa z liderką designu Cowork w Anthropic — Jenny Wen prezentuje, jak na co dzień wykorzystuje narzędzie do pracy z nieuporządkowanymi danymi badawczymi.',
-      takeaway: 'Zobaczysz realny workflow przetwarzania rozproszonych danych z badań użytkowników w uporządkowane wnioski produktowe. Pierwsza część prezentuje pełen proces od chaosu informacyjnego do produktowej syntezy. Druga część omawia, jak taki workflow zamienić w cykliczny scheduled task dostarczający co poniedziałek gotowe pomysły do pracy.',
-      part: 'Rozszerzenie tematu Cowork — materiał dla osób, które chcą zobaczyć zaawansowany workflow analityczny z perspektywy aktywnego użytkownika narzędzia.'
-    },
-    desc: 'Rozmowa z Jenny Wen, liderką designu Cowork w Anthropic, prezentująca dwa zastosowania narzędzia. Pierwsza część to demonstracja przetwarzania rozproszonych danych badawczych — notatek z wywiadów użytkowników, fragmentów dokumentów i obserwacji — w spójne wnioski produktowe i prezentację dla zespołu. Druga część pokazuje koncepcję zamiany tego workflow w cykliczny scheduled task (np. co poniedziałek rano trzy pomysły produktowe z uzasadnieniem) — omawianą na rozmowie, wraz z początkiem konfiguracji. Uwaga: to luźna rozmowa podcastowa — wartością jest sposób myślenia o workflow, nie instruktaż klik-po-kliku.',
-    zadanie: 'Zaprojektuj jeden tygodniowy workflow analityczny we własnym obszarze odpowiedzialności i skonfiguruj go jako scheduled task.'
-  },
-  {
-    id: 'C3a', videoId: 'duRvQ290nTw',
-    title: 'Cowork w analizie raportów — od PDF do dashboardu',
-    author: 'Vivek Mishra',
-    lang: 'en', duration: 347,
-    start: 2506, end: 2853,
-    section: 'level2',
-    intro: {
-      about: 'Wycinek z dłuższego kursu prezentujący proces ekstrakcji danych z dokumentów PDF i automatycznego generowania interaktywnego dashboardu.',
-      takeaway: 'Zobaczysz pełen proces od dokumentu źródłowego do gotowego dashboardu: wgrywanie wielostronicowego PDF, ekstrakcja kluczowych metryk, automatyczne strukturyzowanie danych oraz generowanie interaktywnej wizualizacji.',
-      part: 'Część rozszerzona — materiał dla osób pracujących z analizą sprawozdań i raportów, w tym dokumentów dealowych oraz analiz spółek portfelowych.'
-    },
-    desc: 'Wycinek z obszernego kursu prezentujący zaawansowany proces ekstrakcji danych z dokumentów PDF i generowania interaktywnego dashboardu. Trener demonstruje przetwarzanie wielostronicowego raportu spółki: identyfikację kluczowych metryk, automatyczne strukturyzowanie informacji finansowych i operacyjnych oraz wygenerowanie pełnej wizualizacji gotowej do prezentacji.',
-    zadanie: 'Wgraj jeden raport kwartalny lub roczny spółki portfelowej (PDF) i zleć Cowork ekstrakcję kluczowych metryk oraz interaktywny dashboard. Porównaj wyciągnięte liczby ze źródłem — zanotuj każdą rozbieżność.'
-  },
-  {
-    id: 'C3b', videoId: 'duRvQ290nTw',
-    title: 'CLAUDE.md — strukturyzacja firmowych projektów',
-    author: 'Vivek Mishra',
-    lang: 'en', duration: 232,
-    start: 2853, end: 3085,
-    section: 'level2',
-    intro: {
-      about: 'Wycinek prezentujący najlepszą praktykę strukturyzacji projektów Cowork — plik CLAUDE.md jako system instrukcji folderowych i mechanizm kontroli pracy.',
-      takeaway: 'Poznasz mechanizm pliku CLAUDE.md — sposób na nadawanie Claude trwałych instrukcji dotyczących konkretnego folderu projektowego, konfigurowania systemu kopii zapasowych oraz prowadzenia logów wykonanych działań. Materiał ważny dla osób budujących firmowe biblioteki projektów.',
-      part: 'Rozszerzenie tematu organizacji pracy w Cowork — best practice dla zaawansowanych użytkowników.'
-    },
-    desc: 'Wycinek prezentujący zaawansowaną praktykę strukturyzacji projektów w Claude Cowork za pomocą pliku CLAUDE.md. Trener omawia mechanizm trwałych instrukcji folderowych pozwalających Claude utrzymywać konsystentne zachowanie w obrębie konkretnego projektu, konfigurację systemu kopii zapasowych oraz prowadzenie szczegółowych logów wykonanych operacji.',
-    zadanie: 'Stwórz w swoim folderze roboczym plik CLAUDE.md z trzema zasadami pracy (np. format nazw plików, obowiązkowy backup przed zmianami, log wykonanych działań) i sprawdź, czy Cowork ich przestrzega.'
-  },
-  {
-    id: 'C3c', videoId: 'duRvQ290nTw',
-    title: 'Cowork w pracy z arkuszami — czyszczenie i normalizacja danych CSV',
-    author: 'Vivek Mishra',
-    lang: 'en', duration: 307,
-    start: 3961, end: 4268,
-    section: 'level2',
-    intro: {
-      about: 'Wycinek prezentujący czyszczenie i normalizację danych tabelarycznych w Claude Cowork przed ich dalszym udostępnieniem.',
-      takeaway: 'Zobaczysz pełen proces porządkowania danych tabelarycznych: czyszczenie surowego pliku CSV, normalizację formatów oraz identyfikację i poprawę błędów w danych przed przekazaniem pliku współpracownikom lub księgowości.',
-      part: 'Część rozszerzona — materiał dla osób pracujących z modelami finansowymi, analizą tabelaryczną oraz przygotowywaniem danych do prezentacji.'
-    },
-    desc: 'Wycinek prezentujący zaawansowane przetwarzanie danych tabelarycznych w Claude Cowork. Trener demonstruje proces od surowego pliku CSV z błędami formatowania, poprzez automatyczne czyszczenie i normalizację, aż do uporządkowanego pliku gotowego do udostępnienia współpracownikom lub księgowości.',
-    zadanie: 'Wyeksportuj jeden surowy plik CSV z systemu księgowego lub portfelowego (dane niewrażliwe albo zanonimizowane) i zleć Cowork czyszczenie oraz normalizację przed udostępnieniem zespołowi.'
-  },
-  {
-    id: 'C4', videoId: 'BX2PxxM15Zc',
-    title: 'Claude for Excel — test na pełnym modelu trójsprawozdaniowym',
-    author: 'Corporate Finance Institute',
-    lang: 'en', duration: 1176,
-    start: 0, end: null,
-    section: 'level2',
-    intro: {
-      about: 'Tim Vipond, CEO Corporate Finance Institute, testuje na żywo dodatek Claude for Excel: odbudowę kompletnego modelu trójsprawozdaniowego od zera, bez przygotowanego scenariusza.',
-      takeaway: 'Zobaczysz cały proces: instalację dodatku z Microsoft Marketplace, celowo bardzo prosty prompt (Claude sam odczytuje konwencje CFI z szablonu), budowę prognozy rachunku wyników, harmonogramów (kapitał obrotowy, PP&E, struktura kapitału), domknięcie bilansu i cash flow oraz poprawki formatowania według standardów CFI. Po drodze widać realne potknięcia narzędzia (pominięty wiersz, korekty formuł) i jedyną wyraźną słabość — formatowanie (ok. 5 minut ręcznych poprawek). Na końcu wynik jest weryfikowany przez porównanie z modelem wzorcowym (wyrywkowe sprawdzenie formuł i liczb) — zgodny z oryginałem.',
-      part: 'Domknięcie Poziomu 2 — materiał najbliższy codzienności funduszu: modelowanie finansowe w Excelu. Przed własnymi testami pamiętaj o zasadach danych: ćwicz wyłącznie na modelach zanonimizowanych.'
-    },
-    desc: 'Tim Vipond, CEO Corporate Finance Institute, usuwa z gotowego modelu trójsprawozdaniowego cały forecast wraz z formułami i prosi Claude for Excel o odbudowę według standardów uczonych w kursach CFI. Krok po kroku: instalacja dodatku, prognoza przychodów i kosztów, harmonogramy operacyjne i kapitałowe, domykanie bilansu, rachunek przepływów, formatowanie zgodne z konwencjami (m.in. niebieskie hardcody), wreszcie wyrywkowe sprawdzenie formuł względem modelu wzorcowego — z wynikiem zgodnym z oryginałem (poza drobnymi różnicami w formatowaniu).',
-    zadanie: 'Zainstaluj dodatek Claude for Excel i powtórz test w mniejszej skali: usuń formuły z jednej zakładki zanonimizowanego modelu i zleć ich odbudowę. Porównaj wynik z oryginałem komórka po komórce — każdą rozbieżność wyjaśnij.'
-  }
 ];
 
 // =========================================================================
@@ -889,6 +941,7 @@ let posPoll = null;
 let playerWatchdog = null;
 let playerResponded = false;
 let endHandledForIndex = -1;
+let lastCurrentTime = -1;
 
 function getProgress() {
   try { return JSON.parse(localStorage.getItem(STORAGE) || '{}'); }
@@ -916,6 +969,42 @@ function setIntroSeen(id) {
   saveProgress(p);
 }
 
+// ===== Licznik czasu oglądania (Opcja A — prefill formularza) =====
+let lastPlayerState = -1;
+let watchSeconds = (getProgress().watchSec || 0);
+function persistWatch() { const p = getProgress(); p.watchSec = watchSeconds; saveProgress(p); }
+setInterval(() => {
+  if (lastPlayerState === 1) {            // 1 = odtwarzanie; reklamy/pauza/buforowanie się nie liczą
+    watchSeconds++;
+    if (watchSeconds % 15 === 0) persistWatch();
+  }
+}, 1000);
+window.addEventListener('beforeunload', persistWatch);
+
+// Link do formularza Microsoft Forms z wstępnie wypełnionymi polami (identyfikatory pól z formularza).
+const FORMS_ID = 'VXl2DNUYtkOEkSIgceWjTN8AMLsK0WJFiDrHADuV9XFUQVU1TUpBR0VTSFI4MlJOVzFEUjBWSVBENC4u';
+const FORMS_F_NAME = 'r1e7fbf45a8a9494c81a15ca0841129a6';
+const FORMS_F_DONE = 'rc15e68e51ff74f36ab771a32e06bce93';
+const FORMS_F_TIME = 'r6aafd12aafaf4e2e838a3a2a74bd0095';
+function fmtWatch(s) {
+  const m = Math.round(s / 60);
+  if (m < 60) return m + ' min';
+  return Math.floor(m / 60) + ' h ' + (m % 60) + ' min';
+}
+function buildFormsUrl() {
+  const completed = getCompleted();
+  const done = playlist.filter(p => completed[p.id]).length;
+  const nameEl = document.getElementById('userName');
+  const name = (nameEl ? nameEl.value : '').trim();
+  const params = [
+    'id=' + FORMS_ID,
+    FORMS_F_NAME + '=' + encodeURIComponent(name),
+    FORMS_F_DONE + '=' + encodeURIComponent(done + '/' + playlist.length + ' odcinków'),
+    FORMS_F_TIME + '=' + encodeURIComponent(fmtWatch(watchSeconds))
+  ];
+  return 'https://forms.office.com/Pages/ResponsePage.aspx?' + params.join('&');
+}
+
 // =========================================================================
 // RENDER PLAYLIST
 // =========================================================================
@@ -927,7 +1016,7 @@ function renderPlaylist() {
   const level1Mins = Math.round(playlist.filter(p => p.section === 'level1').reduce((s, p) => s + p.duration, 0) / 60);
   const level2Mins = Math.round(playlist.filter(p => p.section === 'level2').reduce((s, p) => s + p.duration, 0) / 60);
 
-  let html = `<div class="playlist-header"><h3>Poziom 1 — Podstawy</h3><div class="meta">${level1Count} odcinków · ${level1Mins} minut</div></div>`;
+  let html = `<div class="playlist-header"><h3>Program szkolenia</h3><div class="meta">${level1Count} odcinków · ${level1Mins} minut</div></div>`;
   let level1Idx = 0, level2Idx = 0;
   let lastSection = null;
   playlist.forEach((item, idx) => {
@@ -1008,21 +1097,24 @@ function updateStats() {
   document.getElementById('statCount').textContent = `${done}/${total}`;
   document.getElementById('statTime').textContent = `${doneMins} z ~${totalMins} min`;
   document.getElementById('progressFill').style.width = `${(done / total) * 100}%`;
-  const level1Items = playlist.filter(p => p.section === 'level1');
-  const level1Done = level1Items.every(p => completed[p.id]);
   const allDone = playlist.every(p => completed[p.id]);
   const banner = document.getElementById('completionBanner');
   if (allDone) {
     document.getElementById('bannerTitle').textContent = 'Ukończyłeś całe szkolenie';
-    document.getElementById('bannerText').textContent = `Przeszedłeś wszystkie ${total} odcinków — Poziom 1 i Poziom 2. Zgłoś ukończenie w formularzu poniżej.`;
-    banner.style.display = 'block';
-  } else if (level1Done) {
-    document.getElementById('bannerTitle').textContent = 'Ukończyłeś Poziom 1';
-    document.getElementById('bannerText').textContent = 'Obejrzałeś wszystkie odcinki podstawowe. Poziom 2 zawiera materiały rozszerzające — wybierz dowolny temat z listy, aby kontynuować.';
+    document.getElementById('bannerText').textContent = `Przeszedłeś wszystkie ${total} odcinków. Wpisz imię i nazwisko i wyślij potwierdzenie — liczba odcinków i czas uzupełnią się same.`;
+    refreshFormsLink();
     banner.style.display = 'block';
   } else {
     banner.style.display = 'none';
   }
+  // odśwież listę zadań, by auto-zadanie „Ukończ kurs” reagowało na żywo (także przy otwartej zakładce TODO)
+  if (typeof renderTodo === 'function') renderTodo();
+}
+
+// Ustawia link do formularza z aktualnym prefillem (imię z pola, liczba odcinków, czas).
+function refreshFormsLink() {
+  const link = document.getElementById('formsLink');
+  if (link) link.href = buildFormsUrl();
 }
 
 // =========================================================================
@@ -1043,23 +1135,15 @@ function showIntroModal(idx) {
   if (posPoll) { clearInterval(posPoll); posPoll = null; }
   endHandledForIndex = currentIndex;
   try { document.getElementById('player').contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":"","id":1,"channel":"widget"}', '*'); } catch (err) {}
+  lastPlayerState = 2; // PAUSED — natychmiast wstrzymaj licznik czasu, nie czekaj na odpowiedź YT
   if (!document.getElementById('introOverlay').classList.contains('active')) introTrigger = document.activeElement;
   pendingIndex = idx;
   const item = playlist[idx];
   const mins = Math.floor(item.duration / 60);
   const secs = item.duration % 60;
   const dur = `${mins}:${secs.toString().padStart(2, '0')}`;
-  const level1Items = playlist.filter(p => p.section === 'level1');
-  const level2Items = playlist.filter(p => p.section === 'level2');
-  let stepLabel;
-  if (item.section === 'level1') {
-    const pos = level1Items.findIndex(p => p.id === item.id) + 1;
-    stepLabel = `Poziom 1 · odcinek ${pos} z ${level1Items.length}`;
-  } else {
-    const pos = level2Items.findIndex(p => p.id === item.id) + 1;
-    stepLabel = `Poziom 2 · odcinek ${pos} z ${level2Items.length}`;
-  }
-  document.getElementById('introStep').textContent = stepLabel;
+  const pos = idx + 1;
+  document.getElementById('introStep').textContent = `Odcinek ${pos} z ${playlist.length}`;
   document.getElementById('introTitle').textContent = item.title;
   document.getElementById('introAuthor').textContent = `${item.author} · ${dur} · ${item.lang.toUpperCase()}`;
   document.getElementById('introAbout').textContent = item.intro.about;
@@ -1111,6 +1195,7 @@ function handleSegmentEnd(modalDelayMs) {
   endHandledForIndex = currentIndex;
   if (endTimer) { clearTimeout(endTimer); endTimer = null; }
   if (posPoll) { clearInterval(posPoll); posPoll = null; }
+  persistWatch();
   const cur = playlist[currentIndex];
   setCompleted(cur.id, true);
   const isLastLevel1 = currentIndex === playlist.findLastIndex(p => p.section === 'level1');
@@ -1136,6 +1221,8 @@ function loadIdx(idx, autoplay) {
   setCurrentIdx(idx);
   endHandledForIndex = -1;
   playerResponded = false;
+  lastCurrentTime = -1;
+  lastPlayerState = -1;
   const item = playlist[idx];
   const iframe = document.getElementById('player');
   hidePlayerError();
@@ -1151,16 +1238,13 @@ function loadIdx(idx, autoplay) {
   playerWatchdog = setTimeout(() => { if (!playerResponded) showPlayerError(); }, 8000);
 
   if (autoplay) {
-    // Koniec segmentu wykrywa: dla pełnych filmów (end:null) zdarzenie 'ended',
-    // dla klipów z 'end' — pozycja odtwarzania >= end (listener 'message' poniżej, odporne na reklamy).
-    // setTimeout to wyłącznie awaryjny fallback z dużym zapasem, gdyby API playera nie odpowiadało.
-    const fbSecs = Math.round(item.duration * 1.5);
-    endTimer = setTimeout(() => handleSegmentEnd(0), fbSecs * 1000);
-    if (item.end) {
-      posPoll = setInterval(() => {
-        try { iframe.contentWindow.postMessage('{"event":"command","func":"getCurrentTime","args":[],"id":1,"channel":"widget"}', '*'); } catch (e) {}
-      }, 1000);
-    }
+    // Koniec odcinka wykrywamy WYŁĄCZNIE po pozycji odtwarzania filmu (listener 'message' poniżej).
+    // Pozycja filmu nie rośnie podczas reklam, więc reklamy przerywające NIE wyzwalają fałszywego
+    // "ukończono". Świadomie nie ma tu timera liczonego od czasu zegarowego (był źródłem tego buga).
+    // Co sekundę dopytujemy player o aktualną pozycję — działa dla pełnych filmów i dla klipów z 'end'.
+    posPoll = setInterval(() => {
+      try { iframe.contentWindow.postMessage('{"event":"command","func":"getCurrentTime","args":[],"id":1,"channel":"widget"}', '*'); } catch (e) {}
+    }, 1000);
   }
 
   renderPlaylist();
@@ -1191,14 +1275,23 @@ window.addEventListener('message', (e) => {
   if (playerWatchdog) { clearTimeout(playerWatchdog); playerWatchdog = null; }
   hidePlayerError();
   const item = playlist[currentIndex];
+  if (!item) return;
   const info = data.info;
+  // stan odtwarzacza (do licznika czasu): onStateChange -> data.info (liczba), infoDelivery -> info.playerState
+  if (data.event === 'onStateChange' && typeof data.info === 'number') lastPlayerState = data.info;
+  else if (data.event === 'infoDelivery' && info && typeof info.playerState === 'number') lastPlayerState = info.playerState;
   const ct = info && typeof info.currentTime === 'number' ? info.currentTime : null;
-  // klip z parametrem 'end' — koniec gdy pozycja odtwarzania osiągnie 'end' (niezależnie od reklam)
-  if (item && item.end && ct !== null && ct >= item.end - 0.5) { handleSegmentEnd(800); return; }
-  // pełny film (end:null) — stan ENDED
+  if (ct !== null) lastCurrentTime = ct;
+  // Realny koniec odcinka: dla klipów 'end', dla pełnych filmów start+duration (= koniec filmu).
+  const effEnd = item.end != null ? item.end : (item.start || 0) + item.duration;
+  // GŁÓWNY warunek: pozycja odtwarzania osiągnęła koniec. Pozycja filmu NIE rośnie podczas reklam,
+  // więc reklama przerywająca nie wyzwoli fałszywego ukończenia.
+  if (ct !== null && ct >= effEnd - 1) { handleSegmentEnd(800); return; }
+  // ENDED tylko jako potwierdzenie i WYŁĄCZNIE gdy byliśmy już realnie przy końcu —
+  // chroni przed stanem ENDED generowanym przy przejściach reklam.
   const ended = (data.event === 'onStateChange' && data.info === 0) ||
     (data.event === 'infoDelivery' && info && info.playerState === 0);
-  if (ended) handleSegmentEnd(800);
+  if (ended && lastCurrentTime >= effEnd - 5) handleSegmentEnd(800);
 });
 
 document.getElementById('player').addEventListener('load', () => {
@@ -1240,13 +1333,17 @@ document.addEventListener('keydown', (e) => {
 });
 function doReset() {
   if (confirm('Wyczyścić cały postęp oglądania?')) {
+    window.removeEventListener('beforeunload', persistWatch); // nie pozwól beforeunload nadpisać po reset
+    watchSeconds = 0;
     localStorage.removeItem(STORAGE);
     location.reload();
   }
 }
-document.getElementById('resetLink').addEventListener('click', doReset);
-document.getElementById('resetLink').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); doReset(); }
+document.querySelectorAll('.js-reset').forEach(el => {
+  el.addEventListener('click', (e) => { e.preventDefault(); doReset(); });
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); doReset(); }
+  });
 });
 document.getElementById('introStartBtn').addEventListener('click', confirmIntroAndPlay);
 document.getElementById('introOverlay').addEventListener('click', (e) => {
@@ -1258,6 +1355,85 @@ document.getElementById('introOverlay').addEventListener('keydown', (e) => {
 });
 // utrata połączenia w trakcie odtwarzania — pokaż komunikat o odtwarzaczu
 window.addEventListener('offline', () => { if (document.getElementById('player').src) showPlayerError(); });
+
+// Pole imienia w banerze: przywróć zapamiętaną wartość, zapisuj i odświeżaj link prefill na bieżąco.
+(function () {
+  const nameEl = document.getElementById('userName');
+  if (!nameEl) return;
+  const saved = getProgress().userName;
+  if (saved) nameEl.value = saved;
+  const nameErr = document.getElementById('nameErr');
+  nameEl.addEventListener('input', () => {
+    const p = getProgress(); p.userName = nameEl.value; saveProgress(p);
+    if (nameEl.value.trim()) { nameEl.removeAttribute('aria-invalid'); if (nameErr) nameErr.textContent = ''; }
+    refreshFormsLink();
+  });
+  const link = document.getElementById('formsLink');
+  if (link) link.addEventListener('click', (e) => {
+    if (!nameEl.value.trim()) {
+      e.preventDefault();
+      nameEl.setAttribute('aria-invalid', 'true');
+      if (nameErr) nameErr.textContent = 'Najpierw wpisz imię i nazwisko.';
+      nameEl.focus();
+      return;
+    }
+    refreshFormsLink(); // świeży prefill (imię + liczba odcinków + aktualny czas) tuż przed otwarciem
+  });
+})();
+
+// =========================================================================
+// ZAKŁADKA TODO
+// =========================================================================
+const TODO = [
+  { id: 'course', label: 'Ukończ kurs — obejrzyj wszystkie odcinki szkolenia', auto: true },
+  { id: 'account', label: 'Załóż konto Claude', url: 'https://claude.ai', urlLabel: 'claude.ai' },
+  { id: 'pro', label: 'Uzyskaj dostęp do planu Pro/Team (zgodnie z procedurą Avallon)', url: 'https://claude.com/pricing', urlLabel: 'Plany' },
+  { id: 'privacy', label: 'Wyłącz wykorzystywanie Twoich danych do trenowania modeli (claude.ai → Ustawienia → Privacy → „Help improve Claude”)' },
+  { id: 'desktop', label: 'Zainstaluj aplikację Claude Desktop (potrzebna do trybu Cowork)', url: 'https://claude.com/download', urlLabel: 'Pobierz' },
+  { id: 'excel', label: 'Zainstaluj dodatek Claude for Excel — w Excelu: Wstążka → Dodatki → wyszukaj „Claude” → Dodaj (wymaga planu płatnego)' },
+  { id: 'chrome', label: 'Zainstaluj przeglądarkę Google Chrome (jeśli jeszcze jej nie masz)', url: 'https://www.google.com/chrome/', urlLabel: 'Pobierz' },
+  { id: 'chromeext', label: 'Zainstaluj rozszerzenie Claude do Chrome (wymaga planu płatnego)', url: 'https://chromewebstore.google.com/detail/claude/fcoeoabgfenejglbffodgkkbkcdhcgfn', urlLabel: 'Chrome Web Store' },
+  { id: 'plugins', label: 'Przejrzyj gotowe pluginy i dodaj do Cowork co najmniej plugin Private Equity', url: 'https://claude.com/plugins', urlLabel: 'claude.com/plugins' }
+];
+function getTodoState() { return getProgress().todo || {}; }
+function setTodoState(id, val) {
+  const p = getProgress(); p.todo = p.todo || {};
+  if (val) p.todo[id] = true; else delete p.todo[id];
+  saveProgress(p);
+}
+function renderTodo() {
+  const el = document.getElementById('todoList');
+  if (!el) return;
+  const st = getTodoState();
+  const completed = getCompleted();
+  const courseDone = playlist.every(p => completed[p.id]);
+  let html = '';
+  TODO.forEach(t => {
+    const checked = t.auto ? courseDone : !!st[t.id];
+    const aria = t.label.replace(/"/g, '&quot;');
+    html += `<li class="todo-item${checked ? ' done' : ''}">
+      <input type="checkbox" id="todo_${t.id}" data-id="${t.id}"${checked ? ' checked' : ''}${t.auto ? ' disabled' : ''} aria-label="${aria}">
+      <label class="todo-text" for="todo_${t.id}">${t.label}${t.auto ? ' <span class="auto-badge">(zaznacza się automatycznie)</span>' : ''}</label>
+      ${t.url ? `<a class="todo-open" href="${t.url}" target="_blank" rel="noopener">${t.urlLabel || 'Otwórz'} ↗</a>` : ''}
+    </li>`;
+  });
+  el.innerHTML = html;
+  el.querySelectorAll('input[type="checkbox"]:not([disabled])').forEach(cb => {
+    cb.addEventListener('change', () => { setTodoState(cb.dataset.id, cb.checked); renderTodo(); });
+  });
+}
+function showTab(which) {
+  const isTodo = which === 'todo';
+  document.querySelector('.layout').style.display = isTodo ? 'none' : '';
+  document.getElementById('todoPanel').style.display = isTodo ? 'block' : 'none';
+  document.getElementById('tabTodo').classList.toggle('active', isTodo);
+  document.getElementById('tabTodo').setAttribute('aria-pressed', String(isTodo));
+  document.getElementById('tabSzkolenie').classList.toggle('active', !isTodo);
+  document.getElementById('tabSzkolenie').setAttribute('aria-pressed', String(!isTodo));
+  if (isTodo) renderTodo();
+}
+document.getElementById('tabSzkolenie').addEventListener('click', () => showTab('szkolenie'));
+document.getElementById('tabTodo').addEventListener('click', () => showTab('todo'));
 
 // =========================================================================
 // INIT
